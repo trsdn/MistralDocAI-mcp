@@ -3,7 +3,7 @@
 ![Model Context Protocol](https://img.shields.io/badge/Model%20Context%20Protocol-MCP-blue?style=flat-square)
 ![Python](https://img.shields.io/badge/python-3.10%2B-blue?style=flat-square&logo=python&logoColor=white)
 ![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)
-[![CI](https://github.com/trsdn/MistralDocAI-mcp/workflows/test/badge.svg)](https://github.com/trsdn/MistralDocAI-mcp/actions)
+[![CI](https://github.com/trsdn/MistralDocAI-mcp/workflows/Test%20MCP%20Server/badge.svg)](https://github.com/trsdn/MistralDocAI-mcp/actions)
 ![Contributions](https://img.shields.io/badge/contributions-welcome-brightgreen?style=flat-square)
 [![npm version](https://badge.fury.io/js/@trsdn%2Fmistraldocai-mcp-server.svg)](https://badge.fury.io/js/@trsdn%2Fmistraldocai-mcp-server)
 

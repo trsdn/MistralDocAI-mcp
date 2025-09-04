@@ -1,5 +1,5 @@
 {
-  "name": "@mistraldocai/mcp-server",
+  "name": "@trsdn/mistraldocai-mcp-server",
   "version": "1.0.0",
   "description": "MCP server for document-to-Markdown conversion using Mistral AI OCR",
   "main": "dist/index.js",

@@ -10,7 +10,7 @@ A powerful **MCP (Model Context Protocol) server** that converts documents and i
 
 ### MCP Server Capabilities
 - **🔗 MCP Compatible**: Works with Claude Desktop, Continue, and other MCP clients
-- **📦 One-Command Install**: `npx @mistraldocai/mcp-server`
+- **📦 One-Command Install**: `npx @trsdn/mistraldocai-mcp-server`
 - **🔄 Automatic Setup**: Manages Python environment and dependencies
 - **🌍 Cross-Platform**: Windows, macOS, and Linux support
 
@@ -27,7 +27,7 @@ A powerful **MCP (Model Context Protocol) server** that converts documents and i
 ### Step 1: Install the MCP Server
 ```bash
 # Install and test with one command
-npx @mistraldocai/mcp-server --test
+npx @trsdn/mistraldocai-mcp-server --test
 ```
 
 ### Step 2: Get API Key
@@ -42,7 +42,7 @@ Add to your `claude_desktop_config.json`:
   "mcpServers": {
     "mistraldocai": {
       "command": "npx",
-      "args": ["@mistraldocai/mcp-server"],
+      "args": ["@trsdn/mistraldocai-mcp-server"],
       "env": {
         "MISTRAL_API_KEY": "your_mistral_api_key_here"
       }
@@ -52,7 +52,7 @@ Add to your `claude_desktop_config.json`:
 ```
 
 #### For Other MCP Clients
-Use the command: `npx @mistraldocai/mcp-server` with environment variable `MISTRAL_API_KEY`
+Use the command: `npx @trsdn/mistraldocai-mcp-server` with environment variable `MISTRAL_API_KEY`
 
 ### Step 4: Start Using!
 The server provides 2 tools:
@@ -273,8 +273,8 @@ This server is fully compatible with the [Model Context Protocol (MCP)](https://
 
 ### MCP Registry
 This server is available in the MCP ecosystem:
-- **Package**: `@mistraldocai/mcp-server`
-- **Command**: `npx @mistraldocai/mcp-server`
+- **Package**: `@trsdn/mistraldocai-mcp-server`
+- **Command**: `npx @trsdn/mistraldocai-mcp-server`
 - **Protocol Version**: MCP 1.0
 - **Transport**: stdio
 
@@ -293,12 +293,12 @@ Find this MCP server using these tags:
 
 ### NPX (Recommended)
 ```bash
-npx @mistraldocai/mcp-server
+npx @trsdn/mistraldocai-mcp-server
 ```
 
 ### Global Installation
 ```bash
-npm install -g @mistraldocai/mcp-server
+npm install -g @trsdn/mistraldocai-mcp-server
 mistraldocai-mcp
 ```
 

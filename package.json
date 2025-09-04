@@ -35,7 +35,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/yourusername/MistralDocAI-mcp.git"
+    "url": "https://github.com/trsdn/MistralDocAI-mcp.git"
   },
   "engines": {
     "node": ">=18.0.0"

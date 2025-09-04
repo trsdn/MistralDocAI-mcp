@@ -1,8 +1,11 @@
 # DocMistral MCP Server
 
+![Model Context Protocol](https://img.shields.io/badge/Model%20Context%20Protocol-MCP-blue?style=flat-square)
+![Python](https://img.shields.io/badge/python-3.10%2B-blue?style=flat-square&logo=python&logoColor=white)
+![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)
+[![CI](https://github.com/trsdn/MistralDocAI-mcp/workflows/test/badge.svg)](https://github.com/trsdn/MistralDocAI-mcp/actions)
+![Contributions](https://img.shields.io/badge/contributions-welcome-brightgreen?style=flat-square)
 [![npm version](https://badge.fury.io/js/@trsdn%2Fmistraldocai-mcp-server.svg)](https://badge.fury.io/js/@trsdn%2Fmistraldocai-mcp-server)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![MCP Compatible](https://img.shields.io/badge/MCP-Compatible-blue.svg)](https://modelcontextprotocol.io)
 
 A powerful **MCP (Model Context Protocol) server** that converts documents and images to Markdown using Mistral AI's advanced OCR and document processing capabilities. Perfect for integrating document processing into Claude Desktop and other MCP-compatible clients.
 

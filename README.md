@@ -1,6 +1,6 @@
 # DocMistral MCP Server
 
-[![npm version](https://badge.fury.io/js/@mistraldocai%2Fmcp-server.svg)](https://badge.fury.io/js/@mistraldocai%2Fmcp-server)
+[![npm version](https://badge.fury.io/js/@trsdn%2Fmistraldocai-mcp-server.svg)](https://badge.fury.io/js/@trsdn%2Fmistraldocai-mcp-server)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![MCP Compatible](https://img.shields.io/badge/MCP-Compatible-blue.svg)](https://modelcontextprotocol.io)
 

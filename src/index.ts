@@ -199,16 +199,16 @@ class MistralDocAIMCPServer {
       
       if (options.test) {
         console.log('Testing MCP server setup...');
-        const testProc = spawn(pythonPath, ['-c', 'from mcp_server import app; print("✓ MCP server ready")'], {
+        const testProc = spawn(pythonPath, ['-c', 'from mcp_server import app; print("+ MCP server ready")'], {
           cwd: pythonDir,
           stdio: 'inherit'
         });
         
         testProc.on('close', (code) => {
           if (code === 0) {
-            console.log('✓ Test passed - MCP server is ready');
+            console.log('+ Test passed - MCP server is ready');
           } else {
-            console.error('✗ Test failed - Check your setup');
+            console.error('X Test failed - Check your setup');
             process.exit(1);
           }
         });

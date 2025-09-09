@@ -131,7 +131,7 @@ class MistralDocAIMCPServer {
     
     return new Promise((resolve, reject) => {
       const proc = spawn(pipPath, ['install', '-r', requirementsFile], {
-        stdio: 'inherit'
+        stdio: ['inherit', 'ignore', 'inherit']
       });
       
       proc.on('close', (code) => {

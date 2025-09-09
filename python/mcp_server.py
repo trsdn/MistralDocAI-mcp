@@ -22,7 +22,12 @@ from docmistral import MistralDocumentProcessor
 from dotenv import load_dotenv
 
 # Load environment variables
-load_dotenv()
+# First try user directory, then fall back to local directory
+user_env_file = Path.home() / '.mistraldocai-mcp' / '.env'
+if user_env_file.exists():
+    load_dotenv(user_env_file)
+else:
+    load_dotenv()
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')

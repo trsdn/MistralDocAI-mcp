@@ -2,6 +2,7 @@
 
 import { spawn, ChildProcess } from 'child_process';
 import { join, dirname } from 'path';
+import { homedir } from 'os';
 import fs from 'fs-extra';
 import which from 'which';
 
@@ -85,7 +86,10 @@ class MistralDocAIMCPServer {
 
   private async ensurePythonDependencies(): Promise<void> {
     const pythonDir = join(this.packageRoot, 'python');
-    const venvDir = join(pythonDir, 'venv');
+    // Use user home directory for virtual environment when package is globally installed
+    const userDataDir = join(homedir(), '.mistraldocai-mcp');
+    await fs.ensureDir(userDataDir);
+    const venvDir = join(userDataDir, 'venv');
     const requirementsFile = join(pythonDir, 'mcp_requirements.txt');
     
     // Check if virtual environment exists
@@ -107,7 +111,6 @@ class MistralDocAIMCPServer {
     
     return new Promise((resolve, reject) => {
       const proc = spawn(python, ['-m', 'venv', venvDir], { 
-        cwd: pythonDir,
         stdio: 'inherit' 
       });
       
@@ -162,13 +165,14 @@ class MistralDocAIMCPServer {
 
   private async checkEnvironmentFile(): Promise<void> {
     const pythonDir = join(this.packageRoot, 'python');
-    const envFile = join(pythonDir, '.env');
+    const userDataDir = join(homedir(), '.mistraldocai-mcp');
+    const envFile = join(userDataDir, '.env');
     const envExample = join(pythonDir, '.env.example');
     
     if (!await fs.pathExists(envFile) && await fs.pathExists(envExample)) {
       console.error('Creating .env file from template...');
       await fs.copy(envExample, envFile);
-      console.error('⚠️  Please edit python/.env and add your MISTRAL_API_KEY');
+      console.error(`⚠️  Please edit ${envFile} and add your MISTRAL_API_KEY`);
     }
   }
 
@@ -190,7 +194,8 @@ class MistralDocAIMCPServer {
       
       // Start the Python MCP server
       const pythonDir = join(this.packageRoot, 'python');
-      const venvDir = join(pythonDir, 'venv');
+      const userDataDir = join(homedir(), '.mistraldocai-mcp');
+      const venvDir = join(userDataDir, 'venv');
       const serverScript = join(pythonDir, 'mcp_server.py');
       
       const pythonPath = process.platform === 'win32'

@@ -90,14 +90,14 @@ class MistralDocAIMCPServer {
     
     // Check if virtual environment exists
     if (!await fs.pathExists(venvDir)) {
-      console.log('Setting up Python virtual environment...');
+      console.error('Setting up Python virtual environment...');
       await this.createVirtualEnvironment(pythonDir, venvDir);
     }
     
     // Check if dependencies are installed
     const pipFreeze = await this.runPipFreeze(venvDir);
     if (!pipFreeze.includes('mcp>=')) {
-      console.log('Installing Python dependencies...');
+      console.error('Installing Python dependencies...');
       await this.installDependencies(venvDir, requirementsFile);
     }
   }
@@ -166,9 +166,9 @@ class MistralDocAIMCPServer {
     const envExample = join(pythonDir, '.env.example');
     
     if (!await fs.pathExists(envFile) && await fs.pathExists(envExample)) {
-      console.log('Creating .env file from template...');
+      console.error('Creating .env file from template...');
       await fs.copy(envExample, envFile);
-      console.log('⚠️  Please edit python/.env and add your MISTRAL_API_KEY');
+      console.error('⚠️  Please edit python/.env and add your MISTRAL_API_KEY');
     }
   }
 
@@ -198,7 +198,7 @@ class MistralDocAIMCPServer {
         : join(venvDir, 'bin', 'python');
       
       if (options.test) {
-        console.log('Testing MCP server setup...');
+        console.error('Testing MCP server setup...');
         const testProc = spawn(pythonPath, ['-c', 'from mcp_server import app; print("+ MCP server ready")'], {
           cwd: pythonDir,
           stdio: 'inherit'
@@ -206,7 +206,7 @@ class MistralDocAIMCPServer {
         
         testProc.on('close', (code) => {
           if (code === 0) {
-            console.log('+ Test passed - MCP server is ready');
+            console.error('+ Test passed - MCP server is ready');
           } else {
             console.error('X Test failed - Check your setup');
             process.exit(1);
@@ -215,7 +215,7 @@ class MistralDocAIMCPServer {
         return;
       }
       
-      console.log('Starting MistralDocAI MCP Server...');
+      console.error('Starting MistralDocAI MCP Server...');
       this.serverProcess = spawn(pythonPath, [serverScript], {
         cwd: pythonDir,
         stdio: 'inherit'
@@ -239,7 +239,7 @@ class MistralDocAIMCPServer {
   }
 
   private shutdown(): void {
-    console.log('\nShutting down MCP server...');
+    console.error('\nShutting down MCP server...');
     if (this.serverProcess) {
       this.serverProcess.kill('SIGTERM');
     }

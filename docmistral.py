@@ -171,7 +171,7 @@ class MistralDocumentProcessor:
                         "type": "document_url",
                         "document_url": f"data:{mime_type};base64,{base64_doc}"
                     },
-                    include_image_base64=True
+                    include_image_base64=False
                 )
                 
                 # Extract markdown from all pages

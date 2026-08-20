@@ -48,7 +48,7 @@
   },
   "dependencies": {
     "fs-extra": "^11.0.0",
-    "which": "^4.0.0"
+    "which": "^7.0.0"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",

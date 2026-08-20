@@ -84,6 +84,15 @@ class MistralDocAIMCPServer {
     return major > 3 || (major === 3 && minor >= 8);
   }
 
+  private validateOptions(options: ServerOptions): void {
+    const allowedOptions = new Set(['test', 'help', 'version']);
+    const unknownOptions = Object.keys(options).filter((option) => !allowedOptions.has(option));
+
+    if (unknownOptions.length > 0) {
+      throw new Error(`Unknown option(s): ${unknownOptions.join(', ')}`);
+    }
+  }
+
   private async ensurePythonDependencies(): Promise<void> {
     const pythonDir = join(this.packageRoot, 'python');
     // Use user home directory for virtual environment when package is globally installed
@@ -177,6 +186,8 @@ class MistralDocAIMCPServer {
   }
 
   public async start(options: ServerOptions = {}): Promise<void> {
+    this.validateOptions(options);
+
     if (options.help) {
       this.showHelp();
       return;
@@ -204,19 +215,7 @@ class MistralDocAIMCPServer {
       
       if (options.test) {
         console.error('Testing MCP server setup...');
-        const testProc = spawn(pythonPath, ['-c', 'from mcp_server import app; print("+ MCP server ready")'], {
-          cwd: pythonDir,
-          stdio: 'inherit'
-        });
-        
-        testProc.on('close', (code) => {
-          if (code === 0) {
-            console.error('+ Test passed - MCP server is ready');
-          } else {
-            console.error('X Test failed - Check your setup');
-            process.exit(1);
-          }
-        });
+        await this.runSetupTest(pythonPath, pythonDir);
         return;
       }
       
@@ -239,8 +238,28 @@ class MistralDocAIMCPServer {
       
     } catch (error) {
       console.error('Failed to start MCP server:', error);
-      process.exit(1);
+      throw error;
     }
+  }
+
+  private async runSetupTest(pythonPath: string, pythonDir: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const testProc = spawn(pythonPath, ['-c', 'from mcp_server import app; print("+ MCP server ready")'], {
+        cwd: pythonDir,
+        stdio: 'inherit'
+      });
+
+      testProc.on('error', reject);
+      testProc.on('close', (code) => {
+        if (code === 0) {
+          console.error('+ Test passed - MCP server is ready');
+          resolve();
+        } else {
+          console.error('X Test failed - Check your setup');
+          reject(new Error(`MCP server setup test failed (exit code ${code})`));
+        }
+      });
+    });
   }
 
   private shutdown(): void {

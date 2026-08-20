@@ -49,18 +49,7 @@ describe('MistralDocAI MCP Server Functionality', () => {
 
   describe('Error Handling', () => {
     it('should handle invalid options gracefully', async () => {
-      // Test with empty options - should attempt to start normally
-      const options = {};
-      
-      // This will likely fail due to Python environment, but should not crash
-      try {
-        await server.start(options);
-        // If it succeeds, that's fine too
-      } catch (error) {
-        // Should throw a meaningful error, not crash
-        expect(error).toBeInstanceOf(Error);
-        expect((error as Error).message).toBeTruthy();
-      }
+      await expect(server.start({ invalid: true } as any)).rejects.toThrow('Unknown option(s): invalid');
     });
   });
 

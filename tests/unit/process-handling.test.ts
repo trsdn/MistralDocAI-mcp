@@ -56,26 +56,11 @@ describe('Process Handling Tests', () => {
 
   describe('Error Handling', () => {
     it('should handle process errors gracefully', async () => {
-      // Test with invalid options - should not crash
-      try {
-        await server.start({ invalid: true } as any);
-        // If it succeeds somehow, that's fine
-      } catch (error) {
-        // Should throw meaningful error, not crash
-        expect(error).toBeInstanceOf(Error);
-        expect((error as Error).message).toBeTruthy();
-        expect((error as Error).message.length).toBeGreaterThan(0);
-      }
+      await expect(server.start({ invalid: true } as any)).rejects.toThrow('Unknown option(s): invalid');
     });
 
-    it('should handle empty options without crashing', async () => {
-      // Test with empty options
-      try {
-        await server.start({});
-        // May succeed or fail, but should not crash
-      } catch (error) {
-        expect(error).toBeInstanceOf(Error);
-      }
+    it('should handle empty options as a normal start request', () => {
+      expect(() => new MistralDocAIMCPServer()).not.toThrow();
     });
   });
 

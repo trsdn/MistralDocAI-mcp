@@ -9,7 +9,10 @@ import logging
 from pathlib import Path
 from typing import Optional, List
 import argparse
-from mistralai import Mistral
+try:
+    from mistralai import Mistral
+except ImportError:
+    from mistralai.client.sdk import Mistral
 import pypdf
 from PIL import Image
 import tempfile

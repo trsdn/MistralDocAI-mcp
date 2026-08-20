@@ -1,4 +1,4 @@
-mcp>=1.0.0
+mcp>=2.0.0
 mistralai>=0.0.12
 pypdf>=3.17.0
 python-pptx>=0.6.21

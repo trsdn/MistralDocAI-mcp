@@ -10,11 +10,10 @@ Assessment of `trsdn/MistralDocAI-mcp` against version 1.2.0 of the
 | State | Healthy |
 | Record | [`.github/conformance.yml`](../.github/conformance.yml) |
 
-**Result:** 63 pass, 2 partial, 0 fail, 18 not applicable.
+**Result:** 64 pass, 1 partial, 0 fail, 18 not applicable.
 
-Nothing fails. The two partials are both waiting on an event rather than on
-work: `R03` needs a tag to have produced a release, and `T02` needs a link
-checker that has not been adopted.
+Nothing fails. The one partial is waiting on a tool rather than on a decision:
+`T02` needs a link checker that has not been adopted.
 
 ## Settings applied
 
@@ -39,29 +38,45 @@ being active while pull request #16 reports `CLEAN`.
 
 | Criterion | Assessment |
 |---|---|
-| `R03` | Trusted publishing over OIDC is configured on npmjs.com, and the release workflow is complete, with `NPM_TOKEN` kept as a fallback. No tag has produced a release asset yet, which is the evidence the criterion asks for. This becomes `pass` on the first successful release. |
 | `T02` | Internal links are reviewed by hand. No automated link checker runs, and the standard's `markdown.yml` reusable workflow is not yet adopted here. |
 
-## The release credential
+## The release path, and what running it revealed
 
-`R03` is `partial`, but not for want of a credential. Authentication is
-[trusted publishing](https://docs.npmjs.com/trusted-publishers) over OIDC,
-configured on npmjs.com against `trsdn/MistralDocAI-mcp` and `release.yml`, with
-the optional environment constraint left unset. The publish job satisfies the
-matching rules: it requests `id-token: write`, sets `registry-url`, and runs on
-Node 24, whose bundled npm 11.17 supports OIDC. The environment being unset is
-what makes the job's own `environment: npm` harmless, since npm checks only the
-claims it has been given a constraint for.
+`R03` is `pass` on evidence rather than on intent: tag `v2.0.0` ran
+`.github/workflows/release.yml`, which published
+`@trsdn/mistraldocai-mcp-server@2.0.0` to npm with a signed provenance statement
+and attached the tarball to a GitHub release. It replaces 1.0.4, which had been
+the published version for the whole period in which it could not be installed.
 
-`NPM_TOKEN` remains configured as a fallback until a release has published over
-OIDC. The token was checked against the registry and authenticates as `trsdn`
-with read-write collaborator access, so a release cannot fail for lack of a
-credential either way. It should not stay: it is a granular access token that
-bypasses 2FA, and npm
+The first attempt at that tag failed, and usefully. npm 11 no longer creates the
+`--pack-destination` directory, so `npm pack` stopped at "Build the tarball".
+Because the smoke test, the release and the publish all sit behind that step,
+nothing reached the registry. That is the gate from `R05` doing on its first real
+run exactly what its absence failed to do for 1.0.4.
+
+Authentication is [trusted publishing](https://docs.npmjs.com/trusted-publishers)
+over OIDC, configured on npmjs.com against `trsdn/MistralDocAI-mcp` and
+`release.yml` with the optional environment constraint left unset. Leaving it
+unset is what makes the job's own `environment: npm` harmless, because npm checks
+only the claims it has been given a constraint for.
+
+That configuration was correct and still did not take effect. Reading the 2.0.0
+publish log, as this document said had to be done, showed no OIDC exchange and
+npm's notice about granular tokens that bypass 2FA: the `NPM_TOKEN` fallback had
+published, silently. The cause is that `setup-node`'s `registry-url` writes an
+`_authToken` line into `.npmrc`, and npm reads any such line as "authentication
+is already configured" and skips the OIDC exchange entirely
+([actions/setup-node#1551](https://github.com/actions/setup-node/issues/1551)).
+The workflow now deletes that line before publishing, and carries no
+`NODE_AUTH_TOKEN` at all, so a release that cannot authenticate over OIDC fails
+instead of quietly finding a credential.
+
+`NPM_TOKEN` is therefore unused and should be deleted. It is a granular access
+token that bypasses 2FA, and npm
 [has announced](https://github.blog/changelog/2026-07-31-restricting-npm-bypass-2fa-granular-access-tokens/)
 that such tokens lose direct publish around January 2027, having already lost
-package management. The fallback is silent, so the first release's publish log
-has to be read to confirm OIDC was actually used before the secret is deleted.
+package management. The next release is the one that confirms OIDC works, since
+there is no longer a fallback to hide a failure.
 
 ## Notable passes
 

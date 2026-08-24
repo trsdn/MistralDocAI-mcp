@@ -144,6 +144,15 @@ jobs:
       - name: Build
         run: npm run build
 
+      # NODE_AUTH_TOKEN is a granular access token that bypasses 2FA. npm is
+      # withdrawing direct publish from such tokens around January 2027:
+      # https://github.blog/changelog/2026-07-31-restricting-npm-bypass-2fa-granular-access-tokens/
+      #
+      # No workflow change is needed to migrate. This job already requests
+      # id-token: write, sets registry-url, and runs Node 24 (npm 11.17), so the
+      # npm CLI will detect OIDC and prefer it over the token as soon as trusted
+      # publishing is enabled for the package on npmjs.com. The secret can then
+      # be deleted. See https://docs.npmjs.com/trusted-publishers
       - name: Publish
         run: npm publish --provenance --access public
         env:

@@ -27,10 +27,23 @@ These are the failures, and none of them can be resolved from a pull request.
 | `B12` | The `trsdn-standard` topic is absent, so this repository is not discoverable as part of the assessed set. | Add the topic in repository settings. |
 | `S09` | No ruleset or branch protection exists, so no required status check protects `main`. Resolved by the same action as `B06`. | Same ruleset. Require `Node 24.x / ubuntu-latest`, `Python 3.12`, and `Conformance record`. |
 
-`R03` is `partial` for a related reason: the release workflow exists and is
-complete, but `NPM_TOKEN` is not configured as a repository secret, so a tag
-would build and verify a release and then fail at the publish step. Until that
-secret exists, a tag cannot produce an installable artifact.
+`R03` is `partial`, but no longer for want of a credential. `NPM_TOKEN` is now
+configured as a repository secret, and the token was checked against the
+registry: it authenticates as `trsdn` with read-write collaborator access to the
+package. What is still missing is the evidence the criterion asks for, namely a
+tag that has actually produced a release asset. This becomes `pass` on the first
+successful release.
+
+One caveat is worth recording, because it has a date attached. The secret holds
+an npm granular access token that bypasses 2FA. npm
+[has announced](https://github.blog/changelog/2026-07-31-restricting-npm-bypass-2fa-granular-access-tokens/)
+that such tokens lose direct publish around January 2027; they already cannot
+change package settings. The release workflow is ready for the replacement
+today: it requests `id-token: write`, sets `registry-url`, and runs on Node 24,
+whose bundled npm 11.17 supports OIDC. Enabling
+[trusted publishing](https://docs.npmjs.com/trusted-publishers) on npmjs.com is a
+settings change on the package, with no workflow edit, after which the token
+becomes a fallback that can be deleted.
 
 ## Partial results
 
@@ -38,7 +51,7 @@ secret exists, a tag cannot produce an installable artifact.
 |---|---|
 | `B09` | Visibility and topics are intentional, but `homepage` is unset, so the npm package is not linked from the repository header. |
 | `P07` | Description and topics support discovery. The missing homepage is the gap, as in `B09`. |
-| `R03` | The tag-driven release workflow is complete and verified, but `NPM_TOKEN` is missing, so no tag has yet produced an artifact. This becomes `pass` on the first successful release. |
+| `R03` | `NPM_TOKEN` is configured and verified against the registry, and the release workflow is complete. No tag has produced a release asset yet, which is the evidence the criterion asks for. This becomes `pass` on the first successful release. |
 | `T02` | Internal links are reviewed by hand. No automated link checker runs, and the standard's `markdown.yml` reusable workflow is not yet adopted here. |
 
 ## Notable passes

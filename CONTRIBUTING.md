@@ -44,12 +44,15 @@ thresholds enforced. A coverage failure means new code arrived without tests,
 which is a real failure rather than a nuisance.
 
 If you changed anything under `python/`, also run, using an interpreter that has
-`python/mcp_requirements.txt` installed:
+both `python/mcp_requirements.txt` and `python/requirements-dev.txt` installed:
 
 ```sh
 ruff check .
 python3 scripts/verify_python_server.py
 ```
+
+Install Ruff from `python/requirements-dev.txt`, not as a bare `pip install
+ruff`. The pin is what keeps your verdict and CI's the same.
 
 The second command imports the MCP server and asserts its tool contract. Release
 1.0.4 shipped a server that could not be imported at all, and nothing caught it.

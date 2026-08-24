@@ -31,6 +31,7 @@ protocol stream.
 | `python/mcp_server.py` | The MCP server itself: tool definitions and dispatch. |
 | `python/docmistral.py` | Document conversion and all Mistral API calls. |
 | `python/mcp_requirements.txt` | Python runtime dependencies. Every entry needs an upper bound. |
+| `python/requirements-dev.txt` | Python dev tooling (Ruff). Pinned exactly, and not shipped in the tarball. |
 | `scripts/setup.js` | npm `postinstall` hook. Must stay non-fatal; clients install without it. |
 | `scripts/verify_python_server.py` | Asserts the Python tool contract. The regression guard for the 1.0.4 breakage. |
 | `tests/` | Jest unit tests. `tests/support/` holds test doubles. |
@@ -84,12 +85,18 @@ thresholds. A coverage failure is a real failure: it means new code arrived
 without tests.
 
 If you touched anything under `python/`, this must also pass, against an
-interpreter that has `python/mcp_requirements.txt` installed:
+interpreter that has both `python/mcp_requirements.txt` and
+`python/requirements-dev.txt` installed:
 
 ```sh
 ruff check .
 python3 scripts/verify_python_server.py
 ```
+
+Install Ruff from `python/requirements-dev.txt` rather than as a bare
+`pip install ruff`. It is pinned exactly so a local run and CI reach the same
+verdict; an unpinned Ruff already produced an import-sorting error that only
+appeared in CI.
 
 `verify_python_server.py` imports the server and asserts its tools and their
 schemas. It exists because release 1.0.4 shipped a server that could not be

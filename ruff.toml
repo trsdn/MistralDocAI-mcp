@@ -6,6 +6,13 @@ line-length = 120
 
 include = ["python/**/*.py", "scripts/**/*.py"]
 
+# The server runs with python/ on sys.path, so modules in there are first-party.
+# Ruff otherwise falls back to a same-package heuristic, and python/ has no
+# __init__.py for that heuristic to key off. The fallback classified docmistral
+# as first-party under 0.16.3 but not under 0.16.4, so import sorting passed
+# locally and failed in CI.
+src = ["python", "scripts"]
+
 [lint]
 select = [
   "E",   # pycodestyle errors
@@ -21,3 +28,8 @@ select = [
 [lint.per-file-ignores]
 # The verification script deliberately catches every import-time failure.
 "scripts/verify_python_server.py" = ["BLE001"]
+
+[lint.isort]
+# Belt and braces with src above: naming the module leaves nothing to infer,
+# whichever Ruff version runs.
+known-first-party = ["docmistral"]

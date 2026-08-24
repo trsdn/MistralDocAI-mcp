@@ -1,0 +1,6 @@
+# Development-only tooling for the Python side. Not shipped in the npm tarball.
+#
+# Pinned exactly, not merely bounded: an unpinned linter changes its verdict
+# between a local run and CI, which is the same class of problem as the
+# unbounded runtime dependency that broke release 1.0.4.
+ruff==0.16.3

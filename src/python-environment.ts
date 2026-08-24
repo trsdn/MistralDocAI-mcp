@@ -2,7 +2,6 @@ import { spawn } from 'child_process';
 import { join } from 'path';
 import { homedir } from 'os';
 import fs from 'fs-extra';
-import which from 'which';
 
 /**
  * Everything the server needs from the local Python installation.
@@ -69,7 +68,7 @@ export class LocalPythonEnvironment implements PythonEnvironment {
     }
 
     const installed = await this.runPipFreeze();
-    if (!installed.includes('mcp>=')) {
+    if (!isDistributionInstalled(installed, 'mcp')) {
       console.error('Installing Python dependencies...');
       await this.installDependencies();
     }
@@ -112,15 +111,16 @@ export class LocalPythonEnvironment implements PythonEnvironment {
       return this.pythonPath;
     }
 
+    // Asking each candidate for its version both locates it on PATH and proves
+    // it actually runs, which a PATH lookup alone cannot tell us.
     for (const candidate of ['python3', 'python']) {
       try {
-        const path = await which(candidate);
-        if (isSupportedPythonVersion(await getPythonVersion(path))) {
-          this.pythonPath = path;
-          return path;
+        if (isSupportedPythonVersion(await getPythonVersion(candidate))) {
+          this.pythonPath = candidate;
+          return candidate;
         }
       } catch {
-        // Try the next candidate.
+        // Not on PATH, or not executable: try the next candidate.
       }
     }
 
@@ -185,6 +185,26 @@ export class LocalPythonEnvironment implements PythonEnvironment {
       ? join(this.venvDir, 'Scripts', 'pip')
       : join(this.venvDir, 'bin', 'pip');
   }
+}
+
+/**
+ * Reports whether `pip freeze` lists the given distribution.
+ *
+ * `pip freeze` emits `mcp==2.0.0` or `mcp @ file:///...`, never the requirement
+ * specifier. Matching on the specifier made this check always fail, which
+ * reinstalled every dependency on every server start.
+ */
+export function isDistributionInstalled(freezeOutput: string, distribution: string): boolean {
+  const normalized = distribution.toLowerCase().replace(/[-_.]+/g, '-');
+
+  return freezeOutput
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0 && !line.startsWith('#'))
+    .some((line) => {
+      const name = line.split(/[=<>!~ @[]/, 1)[0].toLowerCase().replace(/[-_.]+/g, '-');
+      return name === normalized;
+    });
 }
 
 export function isSupportedPythonVersion(versionString: string): boolean {

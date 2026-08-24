@@ -1,0 +1,23 @@
+# Linting configuration for the Python side of the MCP server.
+# Kept in sync with the Python versions declared in python/mcp_requirements.txt.
+
+target-version = "py310"
+line-length = 120
+
+include = ["python/**/*.py", "scripts/**/*.py"]
+
+[lint]
+select = [
+  "E",   # pycodestyle errors
+  "F",   # pyflakes
+  "W",   # pycodestyle warnings
+  "I",   # import sorting
+  "UP",  # pyupgrade
+  "B",   # flake8-bugbear
+  "C4",  # comprehensions
+  "SIM", # simplifications
+]
+
+[lint.per-file-ignores]
+# The verification script deliberately catches every import-time failure.
+"scripts/verify_python_server.py" = ["BLE001"]

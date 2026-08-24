@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import { spawn, ChildProcess } from 'child_process';
+import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { LocalPythonEnvironment, PythonEnvironment } from './python-environment';
 
@@ -98,7 +99,7 @@ class MistralDocAIMCPServer {
    * cannot drift from the published artifact.
    */
   private identity(): PackageIdentity {
-    const manifest = require(join(this.packageRoot, 'package.json'));
+    const manifest = JSON.parse(readFileSync(join(this.packageRoot, 'package.json'), 'utf8'));
     const repository: string = (manifest.repository?.url ?? '')
       .replace(/^git\+/, '')
       .replace(/\.git$/, '');

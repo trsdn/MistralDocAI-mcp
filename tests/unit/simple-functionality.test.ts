@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, jest } from '@jest/globals';
-import MistralDocAIMCPServer from '../../src/index';
+import MistralDocAIMCPServer, { ServerOptions } from '../../src/index';
 import { FakePythonEnvironment } from '../support/fake-python-environment';
 
 describe('MistralDocAI MCP Server Functionality', () => {
@@ -50,7 +50,7 @@ describe('MistralDocAI MCP Server Functionality', () => {
 
   describe('Error Handling', () => {
     it('should handle invalid options gracefully', async () => {
-      await expect(server.start({ invalid: true } as any)).rejects.toThrow('Unknown option(s): invalid');
+      await expect(server.start({ invalid: true } as unknown as ServerOptions)).rejects.toThrow('Unknown option(s): invalid');
     });
   });
 

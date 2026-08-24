@@ -5,10 +5,8 @@ import { tmpdir } from 'os';
 import { join } from 'path';
 
 jest.mock('child_process');
-jest.mock('which', () => ({ __esModule: true, default: jest.fn() }));
 
 import { spawn } from 'child_process';
-import which from 'which';
 import { LocalPythonEnvironment } from '../../src/python-environment';
 
 type Outcome = { stdout?: string; stderr?: string; code?: number; error?: Error };
@@ -21,7 +19,6 @@ class FakeChildProcess extends EventEmitter {
 const spawnMock = spawn as unknown as jest.Mock<
   (command: string, args?: string[], options?: unknown) => FakeChildProcess
 >;
-const whichMock = which as unknown as jest.Mock<(candidate: string) => Promise<string>>;
 
 /** Drives `spawn` through a scripted sequence of child-process outcomes. */
 function scriptSpawn(outcomes: Outcome[]): Array<{ command: string; args: string[] }> {
@@ -60,7 +57,6 @@ describe('LocalPythonEnvironment', () => {
     environment = new LocalPythonEnvironment(packageRoot, userDataDir);
 
     spawnMock.mockReset();
-    whichMock.mockReset();
   });
 
   afterEach(async () => {
@@ -131,7 +127,6 @@ describe('LocalPythonEnvironment', () => {
 
   describe('ensureDependencies', () => {
     it('creates the virtual environment and installs requirements when missing', async () => {
-      whichMock.mockResolvedValue('/usr/bin/python3');
       const calls = scriptSpawn([
         { stdout: 'Python 3.12.1\n', code: 0 }, // version probe
         { code: 0 }, // python -m venv
@@ -147,7 +142,7 @@ describe('LocalPythonEnvironment', () => {
 
     it('skips installation when requirements are already present', async () => {
       await ensureDir(join(userDataDir, 'venv'));
-      const calls = scriptSpawn([{ stdout: 'mcp>=1.0.0\n', code: 0 }]);
+      const calls = scriptSpawn([{ stdout: 'mcp==2.0.0\nmistralai==2.9.3\n', code: 0 }]);
 
       await environment.ensureDependencies();
 
@@ -156,7 +151,6 @@ describe('LocalPythonEnvironment', () => {
     });
 
     it('reports a failed virtual environment creation', async () => {
-      whichMock.mockResolvedValue('/usr/bin/python3');
       scriptSpawn([{ stdout: 'Python 3.12.1\n', code: 0 }, { code: 1 }]);
 
       await expect(environment.ensureDependencies()).rejects.toThrow(
@@ -173,16 +167,41 @@ describe('LocalPythonEnvironment', () => {
       );
     });
 
-    it('refuses to continue when no supported interpreter exists', async () => {
-      whichMock.mockImplementation(async (candidate) => {
-        if (candidate === 'python3') return '/usr/bin/python3';
-        throw new Error('not found');
-      });
-      scriptSpawn([{ stdout: 'Python 3.7.9\n', code: 0 }]);
+    it('refuses to continue when the interpreter is too old', async () => {
+      scriptSpawn([
+        { stdout: 'Python 3.7.9\n', code: 0 }, // python3
+        { stdout: 'Python 2.7.18\n', code: 0 } // python
+      ]);
 
       await expect(environment.ensureDependencies()).rejects.toThrow(
         'Python 3.8+ is required but not found'
       );
+    });
+
+    it('refuses to continue when no interpreter is on PATH', async () => {
+      scriptSpawn([
+        { error: new Error('spawn python3 ENOENT') },
+        { error: new Error('spawn python ENOENT') }
+      ]);
+
+      await expect(environment.ensureDependencies()).rejects.toThrow(
+        'Python 3.8+ is required but not found'
+      );
+    });
+
+    it('falls back to `python` when `python3` is unavailable', async () => {
+      const calls = scriptSpawn([
+        { error: new Error('spawn python3 ENOENT') },
+        { stdout: 'Python 3.12.1\n', code: 0 }, // python
+        { code: 0 }, // python -m venv
+        { stdout: '', code: 0 }, // pip freeze
+        { code: 0 } // pip install
+      ]);
+
+      await environment.ensureDependencies();
+
+      expect(calls[1].command).toBe('python');
+      expect(calls[2].command).toBe('python');
     });
   });
 });

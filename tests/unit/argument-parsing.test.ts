@@ -1,6 +1,6 @@
 import { describe, it, expect } from '@jest/globals';
 import { parseArgs } from '../../src/index';
-import { isSupportedPythonVersion } from '../../src/python-environment';
+import { isDistributionInstalled, isSupportedPythonVersion } from '../../src/python-environment';
 
 describe('parseArgs', () => {
   it('returns no options for an empty argument list', () => {
@@ -36,4 +36,31 @@ describe('isSupportedPythonVersion', () => {
       expect(isSupportedPythonVersion(version)).toBe(false);
     }
   );
+});
+
+describe('isDistributionInstalled', () => {
+  const freeze = ['mcp==2.0.0', 'mistralai==2.9.3', 'python-dotenv==1.2.3', ''].join('\n');
+
+  it('matches the pinned form that pip freeze actually emits', () => {
+    expect(isDistributionInstalled(freeze, 'mcp')).toBe(true);
+    expect(isDistributionInstalled(freeze, 'mistralai')).toBe(true);
+  });
+
+  it('normalises the distribution name like PyPI does', () => {
+    expect(isDistributionInstalled(freeze, 'python_dotenv')).toBe(true);
+    expect(isDistributionInstalled('Pillow==12.3.0', 'pillow')).toBe(true);
+  });
+
+  it('matches direct-reference and editable installs', () => {
+    expect(isDistributionInstalled('mcp @ file:///tmp/mcp', 'mcp')).toBe(true);
+  });
+
+  it('does not match a different distribution with a shared prefix', () => {
+    expect(isDistributionInstalled('mcp-server==1.0.0', 'mcp')).toBe(false);
+    expect(isDistributionInstalled('', 'mcp')).toBe(false);
+  });
+
+  it('ignores comments and blank lines', () => {
+    expect(isDistributionInstalled('# mcp==2.0.0\n\n', 'mcp')).toBe(false);
+  });
 });

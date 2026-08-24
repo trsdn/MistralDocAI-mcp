@@ -5,13 +5,26 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
+    commit-message:
+      prefix: "ci"
+
   - package-ecosystem: npm
     directory: "/"
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
+    commit-message:
+      prefix: "build"
+    groups:
+      development-dependencies:
+        dependency-type: development
+        update-types: [minor, patch]
+
+  # The Python requirements live in python/, not at the repository root.
   - package-ecosystem: pip
-    directory: "/"
+    directory: "/python"
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
+    commit-message:
+      prefix: "build"

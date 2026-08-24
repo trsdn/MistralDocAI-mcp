@@ -2,7 +2,7 @@
 # the incompatible 2.x API and broke every fresh install of 1.0.4.
 mcp>=2.0.0,<3
 mistralai>=2.9.3,<3
-pypdf>=6.0.0,<7
+pypdf>=6.16.1,<7
 python-pptx>=1.0.2,<2
 pillow>=12.3.0,<13
 python-dotenv>=1.2.3,<2

@@ -11,13 +11,13 @@ module.exports = {
   coverageReporters: ['text', 'lcov', 'html'],
   coverageThreshold: {
     global: {
-      branches: 25,
-      functions: 45,
-      lines: 50,
-      statements: 49
+      branches: 70,
+      functions: 80,
+      lines: 85,
+      statements: 84
     }
   },
   setupFilesAfterEnv: ['<rootDir>/tests/setup.ts'],
-  testTimeout: 30000, // 30 seconds for tests that might involve process spawning
+  testTimeout: 15000,
   verbose: true
 };

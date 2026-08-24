@@ -2,86 +2,78 @@
 
 import { spawn, ChildProcess } from 'child_process';
 import { join, dirname } from 'path';
-import { homedir } from 'os';
-import fs from 'fs-extra';
-import which from 'which';
+import { LocalPythonEnvironment, PythonEnvironment } from './python-environment';
 
-// Get current directory
 const currentDir = dirname(__filename);
 
-interface ServerOptions {
+export interface ServerOptions {
   test?: boolean;
   help?: boolean;
   version?: boolean;
 }
 
+interface PackageIdentity {
+  name: string;
+  version: string;
+  repository: string;
+  issues: string;
+  license: string;
+}
+
 class MistralDocAIMCPServer {
-  private pythonPath: string | null = null;
   private serverProcess: ChildProcess | null = null;
   private readonly packageRoot: string;
+  private readonly environment: PythonEnvironment;
 
-  constructor() {
-    // Get the package root directory (dist is one level down from package root)
+  constructor(environment?: PythonEnvironment) {
+    // `dist/` is one level below the package root.
     this.packageRoot = join(currentDir, '..');
+    this.environment = environment ?? new LocalPythonEnvironment(this.packageRoot);
   }
 
-  private async findPython(): Promise<string> {
-    if (this.pythonPath) {
-      return this.pythonPath;
+  public async start(options: ServerOptions = {}): Promise<void> {
+    this.validateOptions(options);
+
+    if (options.help) {
+      this.showHelp();
+      return;
     }
 
-    const candidates = ['python3', 'python'];
-    
-    for (const candidate of candidates) {
-      try {
-        const path = await which(candidate);
-        // Verify it's Python 3.8+
-        const version = await this.getPythonVersion(path);
-        if (this.isValidPythonVersion(version)) {
-          this.pythonPath = path;
-          return path;
-        }
-      } catch (error) {
-        // Continue to next candidate
+    if (options.version) {
+      this.showVersion();
+      return;
+    }
+
+    try {
+      await this.environment.ensureDependencies();
+      await this.environment.ensureEnvFile();
+
+      if (options.test) {
+        console.error('Testing MCP server setup...');
+        await this.environment.runSetupTest();
+        return;
       }
-    }
 
-    throw new Error(
-      'Python 3.8+ is required but not found. Please install Python 3.8 or later.'
-    );
-  }
+      console.error('Starting MistralDocAI MCP Server...');
+      this.serverProcess = spawn(
+        this.environment.interpreterPath(),
+        [this.environment.serverScriptPath()],
+        { cwd: this.environment.workingDirectory(), stdio: 'inherit' }
+      );
 
-  private async getPythonVersion(pythonPath: string): Promise<string> {
-    return new Promise((resolve, reject) => {
-      const proc = spawn(pythonPath, ['--version']);
-      let output = '';
-      
-      proc.stdout.on('data', (data) => {
-        output += data.toString();
-      });
-      
-      proc.stderr.on('data', (data) => {
-        output += data.toString();
-      });
-      
-      proc.on('close', (code) => {
-        if (code === 0) {
-          resolve(output.trim());
-        } else {
-          reject(new Error(`Failed to get Python version: ${output}`));
+      this.serverProcess.on('close', (code) => {
+        if (code !== 0) {
+          console.error(`MCP server exited with code ${code}`);
+          process.exit(code || 1);
         }
       });
-    });
-  }
 
-  private isValidPythonVersion(versionString: string): boolean {
-    const match = versionString.match(/Python (\d+)\.(\d+)/);
-    if (!match) return false;
-    
-    const major = parseInt(match[1]);
-    const minor = parseInt(match[2]);
-    
-    return major > 3 || (major === 3 && minor >= 8);
+      process.on('SIGINT', () => this.shutdown());
+      process.on('SIGTERM', () => this.shutdown());
+    } catch (error) {
+      console.error('Failed to start MCP server:', error);
+      throw error;
+    }
   }
 
   private validateOptions(options: ServerOptions): void {
@@ -93,175 +85,6 @@ class MistralDocAIMCPServer {
     }
   }
 
-  private async ensurePythonDependencies(): Promise<void> {
-    const pythonDir = join(this.packageRoot, 'python');
-    // Use user home directory for virtual environment when package is globally installed
-    const userDataDir = join(homedir(), '.mistraldocai-mcp');
-    await fs.ensureDir(userDataDir);
-    const venvDir = join(userDataDir, 'venv');
-    const requirementsFile = join(pythonDir, 'mcp_requirements.txt');
-    
-    // Check if virtual environment exists
-    if (!await fs.pathExists(venvDir)) {
-      console.error('Setting up Python virtual environment...');
-      await this.createVirtualEnvironment(pythonDir, venvDir);
-    }
-    
-    // Check if dependencies are installed
-    const pipFreeze = await this.runPipFreeze(venvDir);
-    if (!pipFreeze.includes('mcp>=')) {
-      console.error('Installing Python dependencies...');
-      await this.installDependencies(venvDir, requirementsFile);
-    }
-  }
-
-  private async createVirtualEnvironment(pythonDir: string, venvDir: string): Promise<void> {
-    const python = await this.findPython();
-    
-    return new Promise((resolve, reject) => {
-      const proc = spawn(python, ['-m', 'venv', venvDir], { 
-        stdio: 'inherit' 
-      });
-      
-      proc.on('close', (code) => {
-        if (code === 0) {
-          resolve();
-        } else {
-          reject(new Error(`Failed to create virtual environment (exit code ${code})`));
-        }
-      });
-    });
-  }
-
-  private async installDependencies(venvDir: string, requirementsFile: string): Promise<void> {
-    const pipPath = process.platform === 'win32' 
-      ? join(venvDir, 'Scripts', 'pip')
-      : join(venvDir, 'bin', 'pip');
-    
-    return new Promise((resolve, reject) => {
-      const proc = spawn(pipPath, ['install', '-r', requirementsFile], {
-        stdio: ['inherit', 'ignore', 'inherit']
-      });
-      
-      proc.on('close', (code) => {
-        if (code === 0) {
-          resolve();
-        } else {
-          reject(new Error(`Failed to install dependencies (exit code ${code})`));
-        }
-      });
-    });
-  }
-
-  private async runPipFreeze(venvDir: string): Promise<string> {
-    const pipPath = process.platform === 'win32' 
-      ? join(venvDir, 'Scripts', 'pip')
-      : join(venvDir, 'bin', 'pip');
-    
-    return new Promise((resolve) => {
-      const proc = spawn(pipPath, ['freeze']);
-      let output = '';
-      
-      proc.stdout.on('data', (data) => {
-        output += data.toString();
-      });
-      
-      proc.on('close', () => {
-        resolve(output);
-      });
-    });
-  }
-
-  private async checkEnvironmentFile(): Promise<void> {
-    const pythonDir = join(this.packageRoot, 'python');
-    const userDataDir = join(homedir(), '.mistraldocai-mcp');
-    const envFile = join(userDataDir, '.env');
-    const envExample = join(pythonDir, '.env.example');
-    
-    if (!await fs.pathExists(envFile) && await fs.pathExists(envExample)) {
-      console.error('Creating .env file from template...');
-      await fs.copy(envExample, envFile);
-      console.error(`⚠️  Please edit ${envFile} and add your MISTRAL_API_KEY`);
-    }
-  }
-
-  public async start(options: ServerOptions = {}): Promise<void> {
-    this.validateOptions(options);
-
-    if (options.help) {
-      this.showHelp();
-      return;
-    }
-    
-    if (options.version) {
-      this.showVersion();
-      return;
-    }
-
-    try {
-      // Setup Python environment
-      await this.ensurePythonDependencies();
-      await this.checkEnvironmentFile();
-      
-      // Start the Python MCP server
-      const pythonDir = join(this.packageRoot, 'python');
-      const userDataDir = join(homedir(), '.mistraldocai-mcp');
-      const venvDir = join(userDataDir, 'venv');
-      const serverScript = join(pythonDir, 'mcp_server.py');
-      
-      const pythonPath = process.platform === 'win32'
-        ? join(venvDir, 'Scripts', 'python')
-        : join(venvDir, 'bin', 'python');
-      
-      if (options.test) {
-        console.error('Testing MCP server setup...');
-        await this.runSetupTest(pythonPath, pythonDir);
-        return;
-      }
-      
-      console.error('Starting MistralDocAI MCP Server...');
-      this.serverProcess = spawn(pythonPath, [serverScript], {
-        cwd: pythonDir,
-        stdio: 'inherit'
-      });
-      
-      this.serverProcess.on('close', (code) => {
-        if (code !== 0) {
-          console.error(`MCP server exited with code ${code}`);
-          process.exit(code || 1);
-        }
-      });
-      
-      // Handle graceful shutdown
-      process.on('SIGINT', () => this.shutdown());
-      process.on('SIGTERM', () => this.shutdown());
-      
-    } catch (error) {
-      console.error('Failed to start MCP server:', error);
-      throw error;
-    }
-  }
-
-  private async runSetupTest(pythonPath: string, pythonDir: string): Promise<void> {
-    return new Promise((resolve, reject) => {
-      const testProc = spawn(pythonPath, ['-c', 'from mcp_server import app; print("+ MCP server ready")'], {
-        cwd: pythonDir,
-        stdio: 'inherit'
-      });
-
-      testProc.on('error', reject);
-      testProc.on('close', (code) => {
-        if (code === 0) {
-          console.error('+ Test passed - MCP server is ready');
-          resolve();
-        } else {
-          console.error('X Test failed - Check your setup');
-          reject(new Error(`MCP server setup test failed (exit code ${code})`));
-        }
-      });
-    });
-  }
-
   private shutdown(): void {
     console.error('\nShutting down MCP server...');
     if (this.serverProcess) {
@@ -270,12 +93,33 @@ class MistralDocAIMCPServer {
     process.exit(0);
   }
 
+  /**
+   * Identity is read from the package manifest so that the running product
+   * cannot drift from the published artifact.
+   */
+  private identity(): PackageIdentity {
+    const manifest = require(join(this.packageRoot, 'package.json'));
+    const repository: string = (manifest.repository?.url ?? '')
+      .replace(/^git\+/, '')
+      .replace(/\.git$/, '');
+
+    return {
+      name: manifest.name,
+      version: manifest.version,
+      repository,
+      issues: manifest.bugs?.url ?? `${repository}/issues`,
+      license: manifest.license
+    };
+  }
+
   private showHelp(): void {
+    const { name, repository, issues } = this.identity();
+
     console.log(`
 MistralDocAI MCP Server
 
 USAGE:
-  npx @mistraldocai/mcp-server [OPTIONS]
+  npx ${name} [OPTIONS]
 
 OPTIONS:
   --test     Test the server setup
@@ -286,25 +130,32 @@ ENVIRONMENT:
   MISTRAL_API_KEY  Your Mistral AI API key (required)
 
 EXAMPLES:
-  npx @mistraldocai/mcp-server
-  npx @mistraldocai/mcp-server --test
+  npx ${name}
+  npx ${name} --test
 
-For more information, visit: https://github.com/yourusername/MistralDocAI-mcp
+Repository:    ${repository}
+Report issues: ${issues}
 `);
   }
 
   private showVersion(): void {
-    const packageJson = require(join(this.packageRoot, 'package.json'));
-    console.log(`MistralDocAI MCP Server v${packageJson.version}`);
+    const { name, version, repository, issues, license } = this.identity();
+
+    console.log(`
+MistralDocAI MCP Server v${version}
+
+Package:       ${name}
+License:       ${license}
+Repository:    ${repository}
+Report issues: ${issues}
+`);
   }
 }
 
-// Parse command line arguments
-function parseArgs(): ServerOptions {
-  const args = process.argv.slice(2);
+export function parseArgs(argv: string[]): ServerOptions {
   const options: ServerOptions = {};
-  
-  for (const arg of args) {
+
+  for (const arg of argv) {
     switch (arg) {
       case '--test':
         options.test = true;
@@ -319,15 +170,13 @@ function parseArgs(): ServerOptions {
         break;
     }
   }
-  
+
   return options;
 }
 
-// Main execution
 if (require.main === module) {
-  const options = parseArgs();
   const server = new MistralDocAIMCPServer();
-  server.start(options).catch((error) => {
+  server.start(parseArgs(process.argv.slice(2))).catch((error) => {
     console.error('Error:', error);
     process.exit(1);
   });

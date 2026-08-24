@@ -1,0 +1,41 @@
+name: Feature request
+description: Suggest a capability this server does not have.
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem
+      description: >
+        What are you trying to do that you cannot do today? Describe the
+        situation rather than the solution.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What you would like to happen
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: What you tried instead
+      description: >
+        Existing tools, another MCP server, or a manual workaround. This helps
+        judge whether the gap is real.
+
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Where does this belong
+      options:
+        - A new MCP tool
+        - A change to an existing tool
+        - The command-line interface
+        - Documentation
+        - Not sure
+    validations:
+      required: true

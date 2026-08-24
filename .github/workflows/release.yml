@@ -1,0 +1,174 @@
+name: Release
+
+# A tag publishes the release. Everything is verified before anything is
+# published, because the 1.0.4 release proved that a green build says nothing
+# about whether the published artifact actually works.
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing tag to release, for example v2.0.0'
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Verify the release
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24.x'
+          cache: npm
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+
+      - name: Verify the tag matches the declared version
+        id: version
+        run: |
+          set -euo pipefail
+          tag="${{ inputs.tag || github.ref_name }}"
+          tag="${tag#v}"
+          declared="$(node -p 'require("./package.json").version')"
+          if [ "$tag" != "$declared" ]; then
+            echo "release: tag v$tag does not match package.json version $declared" >&2
+            exit 1
+          fi
+          echo "version=$tag" >> "$GITHUB_OUTPUT"
+
+      - name: Verify the changelog documents this version
+        run: |
+          set -euo pipefail
+          version="${{ steps.version.outputs.version }}"
+          awk -v version="$version" '
+            $0 ~ "^## " version " - " { capture = 1; next }
+            capture && /^## / { exit }
+            capture { print }
+          ' CHANGELOG.md > release-notes.md
+          if [ ! -s release-notes.md ]; then
+            echo "release: no changelog entry for $version" >&2
+            exit 1
+          fi
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build
+        run: npm run build
+
+      - name: Test
+        run: npm run test:ci
+
+      - name: Verify the MCP server contract
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r python/mcp_requirements.txt
+          python -m pip install ruff
+          ruff check .
+          python3 scripts/verify_python_server.py
+
+      - name: Build the tarball
+        run: npm pack --pack-destination dist-release
+
+      # Installing the tarball into an empty project is the check that release
+      # 1.0.4 was missing: it exercises the artifact a user actually receives,
+      # not the working tree it was built from.
+      - name: Smoke-test the tarball in a clean project
+        run: |
+          set -euo pipefail
+          tarball="$(realpath dist-release/*.tgz)"
+          workspace="$(mktemp -d)"
+          cd "$workspace"
+          npm init -y > /dev/null
+          npm install --ignore-scripts "$tarball"
+          binary="node_modules/@trsdn/mistraldocai-mcp-server/dist/index.js"
+          reported="$(node "$binary" --version | sed -n 's/.*MCP Server v\(.*\)/\1/p')"
+          if [ "$reported" != "${{ steps.version.outputs.version }}" ]; then
+            echo "release: installed package reports $reported" >&2
+            exit 1
+          fi
+          node "$binary" --test
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: release-artifacts
+          path: |
+            dist-release/*.tgz
+            release-notes.md
+          retention-days: 7
+
+  publish:
+    name: Publish to npm
+    runs-on: ubuntu-latest
+    needs: verify
+    environment:
+      name: npm
+      url: https://www.npmjs.com/package/@trsdn/mistraldocai-mcp-server
+    permissions:
+      contents: read
+      # Required so npm can attach a provenance attestation to the release.
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24.x'
+          registry-url: 'https://registry.npmjs.org'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Publish
+        run: npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+  announce:
+    name: Publish GitHub release
+    runs-on: ubuntu-latest
+    needs: [verify, publish]
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: release-artifacts
+
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag || github.ref_name }}
+        run: |
+          set -euo pipefail
+          gh release create "$TAG" \
+            --repo "${{ github.repository }}" \
+            --title "$TAG" \
+            --notes-file release-notes.md \
+            dist-release/*.tgz

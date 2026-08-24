@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Setup help
+    url: https://github.com/trsdn/MistralDocAI-mcp/blob/main/SUPPORT.md
+    about: Common problems and where to get help before opening an issue.
+  - name: Report a security vulnerability
+    url: https://github.com/trsdn/MistralDocAI-mcp/security/advisories/new
+    about: Report privately. Never in a public issue.

@@ -151,22 +151,30 @@ jobs:
 
       # Authentication is OIDC trusted publishing, configured on npmjs.com for
       # trsdn/MistralDocAI-mcp and this workflow file, with no environment
-      # constraint. The npm CLI detects the OIDC environment and prefers it over
-      # NODE_AUTH_TOKEN, so no credential has to travel with a release.
+      # constraint.
       #
-      # NODE_AUTH_TOKEN stays only as a fallback while OIDC is unproven. It is a
-      # granular access token that bypasses 2FA, and npm withdraws direct publish
-      # from that class of token around January 2027:
-      # https://github.blog/changelog/2026-07-31-restricting-npm-bypass-2fa-granular-access-tokens/
+      # setup-node's registry-url writes an _authToken line into .npmrc. npm
+      # reads that as "authentication is already configured" and never attempts
+      # the OIDC exchange, whatever the token's value. Release 2.0.0 published
+      # that way: its log carries the granular-token 2FA notice and no OIDC
+      # exchange. Removing the line is what actually enables trusted publishing.
       #
-      # Once a release has published over OIDC, delete the NPM_TOKEN secret and
-      # drop the env block below. Note the fallback is silent: if OIDC fails, the
-      # token publishes anyway, so check this step's log for the OIDC exchange
-      # before concluding trusted publishing works.
+      # The registry line itself has to stay, so this deletes one line rather
+      # than the file.
+      - name: Use OIDC rather than a token
+        run: |
+          set -euo pipefail
+          npmrc="${NPM_CONFIG_USERCONFIG:-$HOME/.npmrc}"
+          sed -i '/_authToken/d' "$npmrc"
+          echo "Remaining .npmrc configuration:"
+          grep -v '_authToken' "$npmrc" || true
+
+      # No NODE_AUTH_TOKEN. There is deliberately no fallback: a release that
+      # cannot authenticate over OIDC must fail loudly rather than quietly reach
+      # for a credential. The NPM_TOKEN secret is now unused and can be deleted
+      # once this has published a release.
       - name: Publish
         run: npm publish --provenance --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
   announce:
     name: Publish GitHub release

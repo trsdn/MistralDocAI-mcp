@@ -1,46 +1,38 @@
 #!/usr/bin/env node
 
-const fs = require('fs-extra');
-const path = require('path');
-const { spawn } = require('child_process');
+// npm postinstall hook. It only prints guidance.
+//
+// It deliberately writes no files. It used to create `python/.env` inside the
+// installed package, which is read-only for global installs and which caused a
+// local key to be packed into published tarballs. The server seeds
+// `~/.mistraldocai-mcp/.env` at run time instead.
+//
+// Modern npm gates install scripts, so this may never run. Nothing here may be
+// required for the package to work.
 
-async function postInstallSetup() {
-  console.log('🔧 Setting up MistralDocAI MCP Server...');
-  
-  try {
-    const packageRoot = path.join(__dirname, '..');
-    const pythonDir = path.join(packageRoot, 'python');
-    
-    // Ensure python directory exists
-    await fs.ensureDir(pythonDir);
-    
-    // Copy .env.example if it doesn't exist
-    const envFile = path.join(pythonDir, '.env');
-    const envExample = path.join(pythonDir, '.env.example');
-    
-    if (!await fs.pathExists(envFile) && await fs.pathExists(envExample)) {
-      await fs.copy(envExample, envFile);
-      console.log('📝 Created .env file from template');
-    }
-    
-    console.log('✅ Setup complete!');
-    console.log('');
-    console.log('📋 Next steps:');
-    console.log('1. Get your Mistral API key from https://console.mistral.ai/');
-    console.log('2. Edit python/.env and add your MISTRAL_API_KEY');
-    console.log('3. Test the server: npx @mistraldocai/mcp-server --test');
-    console.log('4. Run the server: npx @mistraldocai/mcp-server');
-    console.log('');
-    console.log('📖 For full documentation, see: README.md');
-    
-  } catch (error) {
-    console.error('❌ Setup failed:', error.message);
-    process.exit(1);
-  }
+const path = require('path');
+
+function reportNextSteps() {
+  const manifest = require(path.join(__dirname, '..', 'package.json'));
+
+  console.log(`${manifest.name} v${manifest.version} installed.`);
+  console.log('');
+  console.log('Next steps:');
+  console.log('  1. Get a Mistral API key from https://console.mistral.ai/');
+  console.log('  2. Set MISTRAL_API_KEY in your environment, or add it to');
+  console.log('     ~/.mistraldocai-mcp/.env once the server has run first');
+  console.log(`  3. Verify the setup: npx ${manifest.name} --test`);
+  console.log('');
+  console.log(`Documentation: ${manifest.homepage}`);
 }
 
 if (require.main === module) {
-  postInstallSetup();
+  try {
+    reportNextSteps();
+  } catch (error) {
+    // A postinstall failure must never fail the install of a working package.
+    console.error(`Warning: could not print setup guidance: ${error.message}`);
+  }
 }
 
-module.exports = postInstallSetup;
+module.exports = reportNextSteps;

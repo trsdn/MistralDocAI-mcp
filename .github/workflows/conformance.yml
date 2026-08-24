@@ -1,0 +1,23 @@
+name: Conformance
+
+# Validates .github/conformance.yml against the standard version it names, and
+# fails when the committed badge drifts from the record or the assessment ages
+# past the review cadence.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    # Monthly, so an ageing assessment turns the check red without anyone
+    # needing to push.
+    - cron: '0 6 1 * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  conformance:
+    uses: trsdn/.github/.github/workflows/conformance.yml@main

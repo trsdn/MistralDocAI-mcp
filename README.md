@@ -1,45 +1,74 @@
-# DocMistral MCP Server
+# MistralDocAI MCP Server
 
-![Model Context Protocol](https://img.shields.io/badge/Model%20Context%20Protocol-MCP-blue?style=flat-square)
-![Python](https://img.shields.io/badge/python-3.10%2B-blue?style=flat-square&logo=python&logoColor=white)
-![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)
-[![CI](https://github.com/trsdn/MistralDocAI-mcp/workflows/Test%20MCP%20Server/badge.svg)](https://github.com/trsdn/MistralDocAI-mcp/actions)
-![Contributions](https://img.shields.io/badge/contributions-welcome-brightgreen?style=flat-square)
-[![npm version](https://badge.fury.io/js/@trsdn%2Fmistraldocai-mcp-server.svg)](https://badge.fury.io/js/@trsdn%2Fmistraldocai-mcp-server)
+[![License](https://img.shields.io/github/license/trsdn/MistralDocAI-mcp)](LICENSE)
+[![Node.js](https://img.shields.io/node/v/@trsdn/mistraldocai-mcp-server)](package.json)
+[![CI](https://github.com/trsdn/MistralDocAI-mcp/actions/workflows/test.yml/badge.svg)](https://github.com/trsdn/MistralDocAI-mcp/actions/workflows/test.yml)
+[![npm](https://img.shields.io/npm/v/@trsdn/mistraldocai-mcp-server)](https://www.npmjs.com/package/@trsdn/mistraldocai-mcp-server)
+[![Conformance](.github/badges/conformance.svg)](docs/self-assessment.md)
 
-A powerful **MCP (Model Context Protocol) server** that converts documents and images to Markdown using Mistral AI's advanced OCR and document processing capabilities. Perfect for integrating document processing into Claude Desktop and other MCP-compatible clients.
+An [MCP](https://modelcontextprotocol.io/) server that converts documents and
+images to Markdown using Mistral AI's OCR and vision models. Point it at a PDF,
+a slide deck, a Word document, or a scanned image, and your MCP client gets
+Markdown back.
 
-## 🚀 Features
+It is for people who already use an MCP client such as Claude Desktop and want
+document conversion inside it, rather than as a separate tool.
 
-### MCP Server Capabilities
-- **🔗 MCP Compatible**: Works with Claude Desktop, Continue, and other MCP clients
-- **📦 One-Command Install**: `npx @trsdn/mistraldocai-mcp-server`
-- **🔄 Automatic Setup**: Manages Python environment and dependencies
-- **🌍 Cross-Platform**: Windows, macOS, and Linux support
+**Status:** actively maintained, best-effort, as a personal project. Version 2.0
+is current. See [Versioning and compatibility](#versioning-and-compatibility)
+before upgrading from 1.x.
 
-### Document Processing
-- **📄 Documents**: PDF, PPTX, DOCX via Mistral's OCR API
-- **🖼️ Images**: PNG, JPG, JPEG, GIF, BMP, AVIF support
-- **🧠 AI-Powered**: Advanced document understanding with complex layouts
-- **✍️ OCR Support**: Scanned documents and handwritten text
-- **⚡ Fast Processing**: Up to 2,000 pages per minute
-- **💰 Cost-Effective**: $0.001 per page ($1 per 1,000 pages)
+**Language:** this project is English-only. Interface text, documentation, and
+error messages are English, and no localized builds are published. Documents you
+process may be in any language Mistral's models support.
 
-## 🚀 Quick Start
+## Requirements
 
-### Step 1: Install the MCP Server
-```bash
-# Install and test with one command
+| | |
+|---|---|
+| Node.js | 22 or later, declared in `engines.node` in [`package.json`](package.json) |
+| Python | 3.10 or later, on your `PATH` as `python3` or `python` |
+| Mistral API key | Free to create at [console.mistral.ai](https://console.mistral.ai/) |
+| Platforms | Linux, macOS, and Windows, all covered by CI |
+
+You do not install the Python dependencies yourself. The server creates a
+virtual environment under `~/.mistraldocai-mcp/` on first run.
+
+## Install
+
+Verify that your machine can run it:
+
+```sh
 npx @trsdn/mistraldocai-mcp-server --test
 ```
 
-### Step 2: Get API Key
-Get your Mistral API key from [console.mistral.ai](https://console.mistral.ai/)
+That creates the Python environment, installs the dependencies, imports the
+server, and reports what it found. Run it before configuring a client, because
+it turns a silent client-side failure into a readable error.
 
-### Step 3: Configure Your MCP Client
+## Configure
 
-#### For Claude Desktop
-Add to your `claude_desktop_config.json`:
+### Your API key
+
+Either export it in the environment your client launches the server from:
+
+```sh
+export MISTRAL_API_KEY=your_key_here
+```
+
+Or put it in `~/.mistraldocai-mcp/.env`, which the server seeds on first run:
+
+```text
+MISTRAL_API_KEY=your_key_here
+```
+
+The file is usually the more reliable option, because desktop MCP clients often
+do not inherit your shell environment.
+
+### Claude Desktop
+
+Add this to `claude_desktop_config.json`:
+
 ```json
 {
   "mcpServers": {
@@ -47,304 +76,157 @@ Add to your `claude_desktop_config.json`:
       "command": "npx",
       "args": ["@trsdn/mistraldocai-mcp-server"],
       "env": {
-        "MISTRAL_API_KEY": "your_mistral_api_key_here"
+        "MISTRAL_API_KEY": "your_key_here"
       }
     }
   }
 }
 ```
 
-#### For Other MCP Clients
-Use the command: `npx @trsdn/mistraldocai-mcp-server` with environment variable `MISTRAL_API_KEY`
+### Other clients
 
-### Step 4: Start Using!
-The server provides 2 tools:
-- `process_document` - Convert documents/images to Markdown
-- `get_supported_formats` - List supported file formats
+Any client that launches an MCP server over stdio works. Use
+`npx @trsdn/mistraldocai-mcp-server` as the command and provide
+`MISTRAL_API_KEY` in the environment.
 
-## Manual Installation (Python Tool)
-
-For direct Python usage:
-
-1. Clone this repository:
-```bash
-git clone <repository-url>
-cd DocMistral
-```
-
-2. Create a virtual environment:
-```bash
-python3 -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-```
-
-3. Install dependencies:
-```bash
-pip install -r requirements.txt
-```
-
-## Configuration
-
-### API Key Setup
-
-1. Get a Mistral API key from [console.mistral.ai](https://console.mistral.ai/)
-
-2. Create a `.env` file in the project directory:
-```bash
-cp .env.example .env
-```
-
-3. Edit `.env` and add your API key:
-```
-MISTRAL_API_KEY=your_api_key_here
-```
-
-Alternatively, you can set it as an environment variable:
-```bash
-export MISTRAL_API_KEY=your_api_key_here
-```
-
-## Usage
-
-### MCP Server Usage
-
-The MCP server provides two tools for document processing:
-
-#### 1. Process Single Document
-Convert a document or image file to Markdown:
-```json
-{
-  "name": "process_document",
-  "arguments": {
-    "file_path": "/path/to/document.pdf"
-  }
-}
-```
-
-Or with base64 content (useful for MCP clients):
-```json
-{
-  "name": "process_document",
-  "arguments": {
-    "base64_content": "base64_encoded_file_content",
-    "file_name": "document.pdf"
-  }
-}
-```
-
-#### 2. Get Supported Formats
-Get information about supported file formats:
-```json
-{
-  "name": "get_supported_formats",
-  "arguments": {}
-}
-```
-
-### Python Tool Usage
-
-For direct command-line usage:
-
-```bash
-# Process all files in the input directory
-python docmistral.py
-
-# Convert a single file
-python docmistral.py --file document.pdf
-```
-
-#### Custom Directories
-
-Specify custom input and output directories:
-```bash
-python docmistral.py --input /path/to/docs --output /path/to/markdown
-```
-
-## Command Line Options
-
-- `--input, -i`: Input directory (default: `input`)
-- `--output, -o`: Output directory (default: `output`)
-- `--mistral-api-key, -k`: Mistral AI API key (required)
-- `--file, -f`: Convert a single file instead of a directory
-
-## Directory Structure
-
-```
-DocMistral/
-├── docmistral.py       # Main script
-├── requirements.txt    # Python dependencies
-├── .env.example        # Environment variables template
-├── README.md          # This file
-├── input/             # Default input directory
-│   └── .gitkeep      # Ensures directory is tracked
-└── output/            # Default output directory
-    └── .gitkeep      # Ensures directory is tracked
-```
-
-## Requirements
-
-- Python 3.8+
-- See `requirements.txt` for Python package dependencies
-
-## Supported Formats
-
-- **Documents**: PDF, PPTX, DOCX (via OCR API)
-- **Images**: PNG, JPG, JPEG, GIF, BMP, AVIF (via OCR API)
-- File size limit: 50 MB
-- Page limit: 1,000 pages per document
-
-## How it Works
-
-- Uses Mistral's dedicated OCR API (`client.ocr.process`) for all supported formats
-- Advanced document understanding handles complex layouts, tables, and equations
-- Processes up to 2000 pages per minute
-- Pricing: $0.001 per page ($1 per 1,000 pages)
-
-## 🔧 MCP Tools Reference
+## Tools
 
 ### `process_document`
-Converts documents and images to Markdown format.
 
-**Parameters:**
-- `file_path` (string): Path to the document/image file
-- OR `base64_content` (string) + `file_name` (string): Base64 content with filename
-- `mime_type` (string, optional): MIME type of the file
+Converts one document or image to Markdown. Give it either a path or base64
+content.
 
-**Example Usage:**
+| Parameter | Type | Notes |
+|---|---|---|
+| `file_path` | string | Path to the file. Use this or `base64_content`. |
+| `base64_content` | string | File content, base64 encoded. Requires `file_name`. |
+| `file_name` | string | Original file name, used to determine the format. |
+| `mime_type` | string | Optional. Inferred from the extension when omitted. |
+
 ```json
-{
-  "name": "process_document",
-  "arguments": {
-    "file_path": "/path/to/document.pdf"
-  }
-}
+{ "name": "process_document", "arguments": { "file_path": "/path/to/report.pdf" } }
 ```
 
-**With Base64 Content:**
-```json
-{
-  "name": "process_document",
-  "arguments": {
-    "base64_content": "base64_encoded_file_content",
-    "file_name": "document.pdf"
-  }
-}
-```
+### `process_directory`
+
+Converts every supported file in a directory, writing one `.md` file per input
+and preserving the directory structure.
+
+| Parameter | Type | Notes |
+|---|---|---|
+| `input_directory` | string | Directory to read. |
+| `output_directory` | string | Directory to write Markdown into. |
 
 ### `get_supported_formats`
-Lists all supported file formats and their limitations.
 
-**Parameters:** None
+Returns the supported formats and their limits. Takes no parameters.
 
-**Example Usage:**
-```json
-{
-  "name": "get_supported_formats",
-  "arguments": {}
-}
+## Supported formats
+
+| Kind | Extensions |
+|---|---|
+| Documents | `.pdf`, `.pptx`, `.docx` |
+| Images | `.png`, `.jpg`, `.jpeg`, `.gif`, `.bmp`, `.avif` |
+
+Limits are set by Mistral's OCR API: 50 MB per file and 1,000 pages per
+document. Pricing and throughput are Mistral's, not this project's; check
+[their pricing page](https://mistral.ai/pricing) for current figures rather than
+trusting a number copied into a README.
+
+## Data and privacy
+
+**Documents you process are sent to Mistral AI.** This is the entire point of
+the server, but it means the content leaves your machine. Do not process
+material you are not permitted to share with a third-party AI provider.
+
+| Question | Answer |
+|---|---|
+| What is collected | Nothing by this project. It has no telemetry, no analytics, and no crash reporting. |
+| Where data goes | `api.mistral.ai`, to convert your document. That is the only outbound destination, other than PyPI and npm during installation. |
+| Who receives your content | [Mistral AI](https://mistral.ai/). Their [privacy policy](https://mistral.ai/terms) governs what they do with it. |
+| What is stored locally | `~/.mistraldocai-mcp/.env` holds your API key. `~/.mistraldocai-mcp/venv/` holds the Python environment. Converted Markdown goes wherever you asked for it. |
+| Retention | This project keeps nothing beyond those files. Delete `~/.mistraldocai-mcp/` to remove everything it created. Retention at Mistral is governed by their terms. |
+| Logging | Diagnostics go to stderr and never include your API key or document content. |
+
+## Accessibility
+
+Console output is plain ASCII with no colour and no decorative symbols, so it
+stays readable in a screen reader, in a Windows terminal, and in a client log
+that strips formatting.
+
+Known limitation: the server has no interface of its own. Everything you see
+comes from your MCP client, so keyboard access, focus handling, and contrast are
+your client's behaviour, not this project's. Accessibility problems in the
+conversation view belong in your client's issue tracker.
+
+## Versioning and compatibility
+
+This project follows [Semantic Versioning](https://semver.org/). A major version
+is where the Node floor rises, the Python `mcp` dependency crosses a major, or a
+tool's contract changes.
+
+Upgrading from 1.x requires Node.js 22 or later. Version 1.0.4 and earlier
+cannot be installed from a clean environment at all: their Python requirements
+were unbounded and now resolve to incompatible releases. There is no supported
+1.x fallback. The full account is in [CHANGELOG.md](CHANGELOG.md).
+
+## How it works
+
+```text
+MCP client  --stdio-->  dist/index.js  --spawn-->  python/mcp_server.py  --HTTPS-->  api.mistral.ai
+                             |                            |
+                    manages ~/.mistraldocai-mcp/    docmistral.py does the
+                    venv, deps, and .env            conversion
 ```
 
-## 📋 Supported Formats
+Two constraints explain most of the design:
 
-| Format | Extensions | Processing Method | Notes |
-|--------|------------|------------------|-------|
-| **Documents** | `.pdf`, `.pptx`, `.docx` | Mistral OCR API | Up to 1,000 pages |
-| **Images** | `.png`, `.jpg`, `.jpeg`, `.gif`, `.bmp`, `.avif` | Mistral OCR API | Up to 50 MB |
+- **stdout is the protocol.** The MCP client parses stdout as JSON-RPC, so every
+  diagnostic in both languages goes to stderr. A stray `print` corrupts the
+  session.
+- **The package directory is read-only.** A global npm install cannot be written
+  to, so the virtual environment, the `.env`, and all other state live under
+  `~/.mistraldocai-mcp/`.
 
-**Limitations:**
-- Maximum file size: 50 MB
-- Maximum pages: 1,000 per document
-- Processing speed: Up to 2,000 pages/minute
-- Cost: $0.001 per page
+## Development
 
-## 🎯 Use Cases
-
-- **Research**: Convert academic papers and reports to Markdown
-- **Documentation**: Process technical manuals and guides
-- **Data Extraction**: Extract text from scanned documents
-- **Content Migration**: Convert legacy documents to modern formats
-- **OCR Processing**: Digitize handwritten notes and forms
-
-## 🔌 MCP Compatibility
-
-This server is fully compatible with the [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) specification and works with:
-
-- **[Claude Desktop](https://claude.ai/desktop)** - Anthropic's desktop application
-- **[Continue](https://continue.dev/)** - VS Code extension
-- **[Zed](https://zed.dev/)** - Code editor with MCP support
-- **Custom MCP clients** - Any application implementing the MCP protocol
-
-### MCP Registry
-This server is available in the MCP ecosystem:
-- **Package**: `@trsdn/mistraldocai-mcp-server`
-- **Command**: `npx @trsdn/mistraldocai-mcp-server`
-- **Protocol Version**: MCP 1.0
-- **Transport**: stdio
-
-## 🏷️ Tags & Discovery
-
-Find this MCP server using these tags:
-- `mcp-server` - MCP compatible server
-- `mistral` - Uses Mistral AI
-- `ocr` - Optical Character Recognition
-- `document-processing` - Document conversion
-- `pdf-to-markdown` - PDF conversion
-- `image-to-text` - Image text extraction
-- `ai-powered` - AI-enhanced processing
-
-## 📦 Installation Methods
-
-### NPX (Recommended)
-```bash
-npx @trsdn/mistraldocai-mcp-server
-```
-
-### Global Installation
-```bash
-npm install -g @trsdn/mistraldocai-mcp-server
-mistraldocai-mcp
-```
-
-### Local Development
-```bash
-git clone https://github.com/yourusername/MistralDocAI-mcp.git
+```sh
+git clone https://github.com/trsdn/MistralDocAI-mcp.git
 cd MistralDocAI-mcp
-npm install && npm run build
-npm start
-```
-
-## 🛠️ Development
-
-### Building from Source
-
-```bash
-# Clone the repository
-git clone <repository-url>
-cd MistralDocAI-mcp
-
-# Install npm dependencies
-npm install
-
-# Build TypeScript
+npm ci
 npm run build
-
-# Test the build
-npm test
 ```
 
-### Publishing
+Validate a change with the single command that CI also runs:
 
-```bash
-npm run build
-npm publish
+```sh
+npm run verify
 ```
 
-## Notes
+If you changed anything under `python/`, also run `ruff check .` and
+`python3 scripts/verify_python_server.py` against an interpreter that has
+`python/mcp_requirements.txt` installed.
 
-- The tool preserves the directory structure when converting files
-- All documents are processed through Mistral AI for consistency
-- Output files are saved with the `.md` extension
-- Supports fallback processing for edge cases
-- API key is required for all operations
-- The MCP server automatically manages Python virtual environments
-- Cross-platform support (Windows, macOS, Linux)
+[AGENTS.md](AGENTS.md) holds the full layout, conventions, and the list of
+operations that are off limits. It is written for AI agents, and it is the
+fastest orientation for a human too.
+
+## Project documents
+
+| Document | What it covers |
+|---|---|
+| [CHANGELOG.md](CHANGELOG.md) | What changed in each release, and upgrade concerns |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | Setup, validation, and what gets a pull request sent back |
+| [AGENTS.md](AGENTS.md) | Repository layout, conventions, and forbidden operations |
+| [SECURITY.md](SECURITY.md) | Supported versions and private vulnerability reporting |
+| [SUPPORT.md](SUPPORT.md) | Common problems and where to ask |
+| [docs/self-assessment.md](docs/self-assessment.md) | Conformance against the repository quality standard |
+
+## License
+
+[MIT](LICENSE).
+
+This repository is assessed against the
+[trsdn Repository Quality Standard](https://github.com/trsdn/.github/blob/main/docs/repository-quality-standard.md).
+The result is recorded in [`.github/conformance.yml`](.github/conformance.yml),
+with per-criterion evidence in [docs/self-assessment.md](docs/self-assessment.md).

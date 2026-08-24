@@ -1,11 +1,12 @@
-import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals';
-import MistralDocAIMCPServer from '../../src/index';
+import { describe, it, expect, beforeEach, jest } from '@jest/globals';
+import MistralDocAIMCPServer, { ServerOptions } from '../../src/index';
+import { FakePythonEnvironment } from '../support/fake-python-environment';
 
 describe('MistralDocAI MCP Server Functionality', () => {
   let server: MistralDocAIMCPServer;
 
   beforeEach(() => {
-    server = new MistralDocAIMCPServer();
+    server = new MistralDocAIMCPServer(new FakePythonEnvironment());
   });
 
   describe('Server Instance', () => {
@@ -49,7 +50,7 @@ describe('MistralDocAI MCP Server Functionality', () => {
 
   describe('Error Handling', () => {
     it('should handle invalid options gracefully', async () => {
-      await expect(server.start({ invalid: true } as any)).rejects.toThrow('Unknown option(s): invalid');
+      await expect(server.start({ invalid: true } as unknown as ServerOptions)).rejects.toThrow('Unknown option(s): invalid');
     });
   });
 
@@ -69,17 +70,16 @@ describe('MistralDocAI MCP Server Functionality', () => {
 
     it('should not leak sensitive information in error messages', async () => {
       const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
-      
-      try {
-        await server.start({ test: true });
-      } catch (error) {
-        // Even if errors occur, they shouldn't contain sensitive paths or API keys
-        const errorMessage = (error as Error).message;
-        expect(errorMessage).not.toContain('api-key');
-        expect(errorMessage).not.toContain('password');
-        expect(errorMessage).not.toContain('/home/');
-      }
-      
+      const failing = new MistralDocAIMCPServer(
+        new FakePythonEnvironment({ ensureDependencies: new Error('Failed to install dependencies') })
+      );
+
+      await expect(failing.start({ test: true })).rejects.toThrow('Failed to install dependencies');
+
+      const diagnostics = consoleErrorSpy.mock.calls.flat().map(String).join('\n');
+      expect(diagnostics).not.toContain('api-key');
+      expect(diagnostics).not.toContain('password');
+
       consoleErrorSpy.mockRestore();
     });
   });

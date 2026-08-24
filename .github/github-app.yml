@@ -1,0 +1,30 @@
+# Repository configuration for the GitHub Copilot app.
+# Reference: https://docs.github.com/copilot/reference/github-copilot-app-reference/repository-configuration
+
+# AGENTS.md is the only copy of the instructions. Restating them here would let
+# the two drift apart, which is exactly what the tool-neutral rule prevents.
+instructions: |
+  Read AGENTS.md in the repository root before changing anything. It is the
+  authoritative source for the layout, the conventions, the validation command,
+  and the operations that are off limits.
+
+  Two rules matter more than the rest: never write to stdout, because MCP
+  clients parse it as the protocol stream, and never add a Python dependency
+  without an upper bound, because an unbounded range is what broke release
+  1.0.4.
+
+scripts:
+  - name: Setup
+    command: npm ci && npm run build
+    triggers:
+      - session.create
+  - name: Verify
+    command: npm run verify
+  - name: Verify Python
+    command: python3 scripts/verify_python_server.py
+  - name: Environment check
+    command: node dist/index.js --test
+
+automation:
+  auto_issue_session: true
+  remote_control: false

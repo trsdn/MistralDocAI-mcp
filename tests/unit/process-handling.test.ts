@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals';
-import MistralDocAIMCPServer from '../../src/index';
+import { describe, it, expect, beforeEach } from '@jest/globals';
+import MistralDocAIMCPServer, { ServerOptions } from '../../src/index';
 
 describe('Process Handling Tests', () => {
   let server: MistralDocAIMCPServer;
@@ -56,7 +56,7 @@ describe('Process Handling Tests', () => {
 
   describe('Error Handling', () => {
     it('should handle process errors gracefully', async () => {
-      await expect(server.start({ invalid: true } as any)).rejects.toThrow('Unknown option(s): invalid');
+      await expect(server.start({ invalid: true } as unknown as ServerOptions)).rejects.toThrow('Unknown option(s): invalid');
     });
 
     it('should handle empty options as a normal start request', () => {

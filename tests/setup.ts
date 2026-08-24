@@ -1,24 +1,27 @@
-import { beforeAll, afterAll } from '@jest/globals';
+import { beforeAll, beforeEach, afterAll, jest } from '@jest/globals';
 
-// Global test setup
+const CONSOLE_METHODS = ['log', 'error', 'warn'] as const;
+
 beforeAll(() => {
-  // Set test environment variables
   process.env.NODE_ENV = 'test';
   process.env.MISTRAL_API_KEY = 'test-api-key-for-testing';
-  
-  // Suppress console output during tests unless explicitly testing it
-  if (!process.env.DEBUG_TESTS) {
-    jest.spyOn(console, 'log').mockImplementation(() => {});
-    jest.spyOn(console, 'error').mockImplementation(() => {});
-    jest.spyOn(console, 'warn').mockImplementation(() => {});
+});
+
+// Re-applied per test because individual tests restore their own spies, which
+// would otherwise let real diagnostics leak into the reporter output.
+beforeEach(() => {
+  if (process.env.DEBUG_TESTS) {
+    return;
+  }
+
+  for (const method of CONSOLE_METHODS) {
+    jest.spyOn(console, method).mockImplementation(() => {});
   }
 });
 
 afterAll(() => {
-  // Restore console methods
   jest.restoreAllMocks();
-  
-  // Clean up test environment
+
   delete process.env.MISTRAL_API_KEY;
   delete process.env.NODE_ENV;
 });

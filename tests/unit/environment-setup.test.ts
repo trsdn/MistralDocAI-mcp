@@ -1,104 +1,98 @@
 import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals';
 import MistralDocAIMCPServer from '../../src/index';
+import { FakePythonEnvironment } from '../support/fake-python-environment';
 
-describe('Environment Setup Tests', () => {
+describe('Environment Setup', () => {
+  let environment: FakePythonEnvironment;
   let server: MistralDocAIMCPServer;
   let originalApiKey: string | undefined;
 
   beforeEach(() => {
-    server = new MistralDocAIMCPServer();
+    environment = new FakePythonEnvironment();
+    server = new MistralDocAIMCPServer(environment);
     originalApiKey = process.env.MISTRAL_API_KEY;
   });
 
   afterEach(() => {
-    // Restore original API key
-    if (originalApiKey) {
-      process.env.MISTRAL_API_KEY = originalApiKey;
-    } else {
+    if (originalApiKey === undefined) {
       delete process.env.MISTRAL_API_KEY;
+    } else {
+      process.env.MISTRAL_API_KEY = originalApiKey;
     }
+    jest.restoreAllMocks();
   });
 
-  describe('API Key Handling', () => {
-    it('should not require API key for help/version commands', async () => {
+  describe('API key handling', () => {
+    it('serves help and version without an API key and without touching Python', async () => {
       delete process.env.MISTRAL_API_KEY;
-      
-      const consoleSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
-      
-      // These should work without API key
+      const log = jest.spyOn(console, 'log').mockImplementation(() => {});
+
       await server.start({ help: true });
       await server.start({ version: true });
-      
-      expect(consoleSpy).toHaveBeenCalledTimes(2);
-      
-      consoleSpy.mockRestore();
+
+      expect(log).toHaveBeenCalledTimes(2);
+      expect(environment.calls).toEqual([]);
     });
 
-    it('should handle missing API key gracefully in test mode', async () => {
+    it('bootstraps the environment before running the setup test', async () => {
       delete process.env.MISTRAL_API_KEY;
-      
-      // Test mode should handle missing API key
-      try {
-        await server.start({ test: true });
-        // May succeed or fail, but should not crash
-      } catch (error) {
-        expect(error).toBeInstanceOf(Error);
-      }
+
+      await server.start({ test: true });
+
+      expect(environment.calls).toEqual(['ensureDependencies', 'ensureEnvFile', 'runSetupTest']);
     });
   });
 
-  describe('Console Output Redirection (v1.0.4)', () => {
-    it('should use console.error for setup messages', () => {
-      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
-      
-      // Instantiate server - setup messages should go to stderr
-      const testServer = new MistralDocAIMCPServer();
-      expect(testServer).toBeInstanceOf(MistralDocAIMCPServer);
-      
-      consoleErrorSpy.mockRestore();
+  describe('Failure paths', () => {
+    it('propagates a setup failure to the caller', async () => {
+      const failure = new Error('Failed to create virtual environment (exit code 1)');
+      const failing = new MistralDocAIMCPServer(
+        new FakePythonEnvironment({ ensureDependencies: failure })
+      );
+
+      await expect(failing.start({ test: true })).rejects.toThrow(failure.message);
     });
 
-    it('should not contaminate stdout with setup messages', async () => {
-      const stdoutSpy = jest.spyOn(process.stdout, 'write').mockImplementation(() => true);
-      
-      // Test help command - this should use console.log (stdout)
-      const consoleSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
-      await server.start({ help: true });
-      
-      expect(consoleSpy).toHaveBeenCalled();
-      
-      stdoutSpy.mockRestore();
-      consoleSpy.mockRestore();
-    });
-  });
+    it('reports failures on stderr so stdout stays a clean MCP channel', async () => {
+      const failing = new MistralDocAIMCPServer(
+        new FakePythonEnvironment({ ensureDependencies: new Error('boom') })
+      );
+      const log = jest.spyOn(console, 'log').mockImplementation(() => {});
+      const error = jest.spyOn(console, 'error').mockImplementation(() => {});
 
-  describe('Error Messages Security', () => {
-    it('should not expose sensitive information in errors', async () => {
-      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
-      
-      try {
-        await server.start({ test: true });
-      } catch (error) {
-        const errorMessage = (error as Error).message;
-        
-        // Should not contain sensitive paths or credentials
-        expect(errorMessage).not.toContain('api-key');
-        expect(errorMessage).not.toContain('password');
-        expect(errorMessage).not.toContain('secret');
-        expect(errorMessage).not.toContain('/home/');
-        expect(errorMessage).not.toContain('\\Users\\');
-      }
-      
-      consoleErrorSpy.mockRestore();
+      await expect(failing.start({ test: true })).rejects.toThrow('boom');
+
+      expect(error).toHaveBeenCalled();
+      expect(log).not.toHaveBeenCalled();
     });
   });
 
-  describe('Directory Structure', () => {
-    it('should use user home directory pattern', () => {
-      // Test that server uses expected directory pattern
-      // This is a basic structural test
-      expect(server).toBeInstanceOf(MistralDocAIMCPServer);
-      expect(typeof server.start).toBe('function');
+  describe('Error message security', () => {
+    it('never echoes the API key into diagnostics', async () => {
+      process.env.MISTRAL_API_KEY = 'sk-secret-value-that-must-not-leak';
+      const failing = new MistralDocAIMCPServer(
+        new FakePythonEnvironment({
+          ensureDependencies: new Error('Failed to install dependencies (exit code 1)')
+        })
+      );
+      const error = jest.spyOn(console, 'error').mockImplementation(() => {});
+
+      await expect(failing.start({ test: true })).rejects.toThrow();
+
+      const diagnostics = error.mock.calls.flat().map(String).join('\n');
+      expect(diagnostics).not.toContain(process.env.MISTRAL_API_KEY);
+    });
+  });
+
+  describe('Console output redirection', () => {
+    it('writes progress messages to stderr, not stdout', async () => {
+      const log = jest.spyOn(console, 'log').mockImplementation(() => {});
+      const error = jest.spyOn(console, 'error').mockImplementation(() => {});
+
+      await server.start({ test: true });
+
+      expect(error).toHaveBeenCalledWith('Testing MCP server setup...');
+      expect(log).not.toHaveBeenCalled();
     });
   });
 });

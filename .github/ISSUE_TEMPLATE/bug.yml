@@ -1,0 +1,75 @@
+name: Bug report
+description: Something does not work as documented.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Do not report security vulnerabilities here. Use the
+        [security policy](https://github.com/trsdn/MistralDocAI-mcp/security/policy).
+
+        Never paste an API key into this form, including inside logs.
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What you expected, and what happened instead.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: How to reproduce
+      description: The steps that trigger it, and the document type if relevant.
+      placeholder: |
+        1. Configure the server in ...
+        2. Call process_document with ...
+        3. The client reports ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment-check
+    attributes:
+      label: Output of the environment check
+      description: >
+        Run `npx @trsdn/mistraldocai-mcp-server --test` and paste the full
+        output. This resolves most setup problems on its own.
+      render: text
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Package version
+      description: The output of `npx @trsdn/mistraldocai-mcp-server --version`.
+    validations:
+      required: true
+
+  - type: input
+    id: client
+    attributes:
+      label: MCP client
+      placeholder: Claude Desktop 1.2.3, or the client and version you use.
+    validations:
+      required: true
+
+  - type: input
+    id: platform
+    attributes:
+      label: Operating system
+      placeholder: macOS 15.1, Windows 11, Ubuntu 24.04
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant log output
+      description: >
+        The server writes diagnostics to stderr, which your client captures in
+        its own log. Redact any credential before pasting.
+      render: text

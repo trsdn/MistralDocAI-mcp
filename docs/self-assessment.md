@@ -27,23 +27,24 @@ These are the failures, and none of them can be resolved from a pull request.
 | `B12` | The `trsdn-standard` topic is absent, so this repository is not discoverable as part of the assessed set. | Add the topic in repository settings. |
 | `S09` | No ruleset or branch protection exists, so no required status check protects `main`. Resolved by the same action as `B06`. | Same ruleset. Require `Node 24.x / ubuntu-latest`, `Python 3.12`, and `conformance / Conformance record`. The last name carries the caller job's prefix because the check comes from a reusable workflow; entering it without the prefix leaves the rule permanently unsatisfied. |
 
-`R03` is `partial`, but no longer for want of a credential. `NPM_TOKEN` is now
-configured as a repository secret, and the token was checked against the
-registry: it authenticates as `trsdn` with read-write collaborator access to the
-package. What is still missing is the evidence the criterion asks for, namely a
-tag that has actually produced a release asset. This becomes `pass` on the first
-successful release.
+`R03` is `partial`, but no longer for want of a credential. Authentication is
+[trusted publishing](https://docs.npmjs.com/trusted-publishers) over OIDC,
+configured on npmjs.com against `trsdn/MistralDocAI-mcp` and `release.yml`, with
+the optional environment constraint left unset. The publish job satisfies the
+matching rules: it requests `id-token: write`, sets `registry-url`, and runs on
+Node 24, whose bundled npm 11.17 supports OIDC. What is still missing is the
+evidence the criterion asks for, namely a tag that has actually produced a
+release asset. This becomes `pass` on the first successful release.
 
-One caveat is worth recording, because it has a date attached. The secret holds
-an npm granular access token that bypasses 2FA. npm
+`NPM_TOKEN` remains configured as a fallback until a release has published over
+OIDC. The token was checked against the registry and authenticates as `trsdn`
+with read-write collaborator access, so a release cannot fail for lack of a
+credential either way. It should not stay: it is a granular access token that
+bypasses 2FA, and npm
 [has announced](https://github.blog/changelog/2026-07-31-restricting-npm-bypass-2fa-granular-access-tokens/)
-that such tokens lose direct publish around January 2027; they already cannot
-change package settings. The release workflow is ready for the replacement
-today: it requests `id-token: write`, sets `registry-url`, and runs on Node 24,
-whose bundled npm 11.17 supports OIDC. Enabling
-[trusted publishing](https://docs.npmjs.com/trusted-publishers) on npmjs.com is a
-settings change on the package, with no workflow edit, after which the token
-becomes a fallback that can be deleted.
+that such tokens lose direct publish around January 2027, having already lost
+package management. The fallback is silent, so the first release's publish log
+has to be read to confirm OIDC was actually used before the secret is deleted.
 
 ## Partial results
 
@@ -51,7 +52,7 @@ becomes a fallback that can be deleted.
 |---|---|
 | `B09` | Visibility and topics are intentional, but `homepage` is unset, so the npm package is not linked from the repository header. |
 | `P07` | Description and topics support discovery. The missing homepage is the gap, as in `B09`. |
-| `R03` | `NPM_TOKEN` is configured and verified against the registry, and the release workflow is complete. No tag has produced a release asset yet, which is the evidence the criterion asks for. This becomes `pass` on the first successful release. |
+| `R03` | Trusted publishing over OIDC is configured on npmjs.com, and the release workflow is complete, with `NPM_TOKEN` kept as a fallback. No tag has produced a release asset yet, which is the evidence the criterion asks for. This becomes `pass` on the first successful release. |
 | `T02` | Internal links are reviewed by hand. No automated link checker runs, and the standard's `markdown.yml` reusable workflow is not yet adopted here. |
 
 ## Notable passes

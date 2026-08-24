@@ -25,7 +25,7 @@ These are the failures, and none of them can be resolved from a pull request.
 |---|---|---|
 | `B06` | The default branch has no merge policy. Anyone with write access can push directly to `main`, and no check is required before a merge. | Create a ruleset on `main` requiring a pull request and the CI checks. |
 | `B12` | The `trsdn-standard` topic is absent, so this repository is not discoverable as part of the assessed set. | Add the topic in repository settings. |
-| `S09` | No ruleset or branch protection exists, so no required status check protects `main`. Resolved by the same action as `B06`. | Same ruleset. Require `Node 24.x / ubuntu-latest`, `Python 3.12`, and `Conformance record`. |
+| `S09` | No ruleset or branch protection exists, so no required status check protects `main`. Resolved by the same action as `B06`. | Same ruleset. Require `Node 24.x / ubuntu-latest`, `Python 3.12`, and `conformance / Conformance record`. The last name carries the caller job's prefix because the check comes from a reusable workflow; entering it without the prefix leaves the rule permanently unsatisfied. |
 
 `R03` is `partial`, but no longer for want of a credential. `NPM_TOKEN` is now
 configured as a repository secret, and the token was checked against the

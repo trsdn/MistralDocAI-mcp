@@ -85,8 +85,13 @@ jobs:
           ruff check .
           python3 scripts/verify_python_server.py
 
+      # npm 11 does not create --pack-destination itself, and fails with ENOENT
+      # rather than a message naming the directory. Creating it first is the
+      # whole fix.
       - name: Build the tarball
-        run: npm pack --pack-destination dist-release
+        run: |
+          mkdir -p dist-release
+          npm pack --pack-destination dist-release
 
       # Installing the tarball into an empty project is the check that release
       # 1.0.4 was missing: it exercises the artifact a user actually receives,

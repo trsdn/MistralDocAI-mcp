@@ -1,6 +1,6 @@
 # Upper bounds are deliberate: an unbounded "mcp>=1.0.0" silently resolved to
 # the incompatible 2.x API and broke every fresh install of 1.0.4.
-mcp>=2.0.0,<3
+mcp>=2.2.0,<3
 mistralai>=2.9.4,<3
 pypdf>=6.0.0,<7
 python-pptx>=1.0.2,<2

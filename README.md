@@ -211,6 +211,16 @@ If you changed anything under `python/`, also run `ruff check .` and
 operations that are off limits. It is written for AI agents, and it is the
 fastest orientation for a human too.
 
+## Repository stats
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/trsdn/MistralDocAI-mcp/stats/.github/stats/repo-card-dark.svg">
+  <img alt="Repository statistics" src="https://raw.githubusercontent.com/trsdn/MistralDocAI-mcp/stats/.github/stats/repo-card.svg">
+</picture>
+
+Generated on a schedule by [`.github/workflows/stats.yml`](.github/workflows/stats.yml)
+and committed to the `stats` branch; the image is a 404 until the first run.
+
 ## Project documents
 
 | Document | What it covers |

@@ -43,6 +43,14 @@ the failure without the credential. If you believe a key has been exposed,
 revoke it in the [Mistral console](https://console.mistral.ai/) before
 reporting.
 
+The other credential this project holds is the npm publishing identity used by
+[`release.yml`](.github/workflows/release.yml): OIDC trusted publishing, which
+mints a short-lived token per run and leaves nothing standing to rotate. The
+repository also carries an `NPM_TOKEN` secret from before trusted publishing was
+adopted; it is unused by the current workflow and should be deleted by the
+maintainer. If it is ever found to be exposed, revoke it on
+[npmjs.com](https://www.npmjs.com/settings) under access tokens.
+
 Note that documents you process are transmitted to Mistral AI. See
 [Data and privacy](README.md#data-and-privacy) before processing anything
 confidential.

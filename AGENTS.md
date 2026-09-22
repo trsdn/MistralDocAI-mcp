@@ -22,6 +22,11 @@ no HTTP surface: MCP clients speak to it over stdin and stdout, which is why
 every diagnostic message goes to stderr. Writing to stdout corrupts the
 protocol stream.
 
+Nothing third-party is bundled or vendored. Node dependencies are resolved by
+npm from the registry at install time, and Python dependencies by pip into the
+managed virtual environment at first run; the published tarball carries only
+this project's own code.
+
 ## Layout
 
 | Path | Purpose |

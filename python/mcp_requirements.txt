@@ -6,4 +6,4 @@ pypdf>=6.0.0,<7
 python-pptx>=1.0.2,<2
 pillow>=12.3.0,<13
 python-dotenv>=1.2.3,<2
-pydantic>=2.13.4,<3
+pydantic>=2.13.5,<3
